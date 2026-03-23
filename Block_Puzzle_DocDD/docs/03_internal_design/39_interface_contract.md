@@ -122,7 +122,7 @@
   - `ui_message`: 任意短文
   - `next_visibility`: boolean
 - 事後条件:
-  - 640×480 基準座標の `ScreenViewModel` を返すこと
+  - 640×576 基準座標の `ScreenViewModel` を返すこと
   - ルール計算を新規実行しないこと
 
 ### 3.10 IF-010 `load_config`
