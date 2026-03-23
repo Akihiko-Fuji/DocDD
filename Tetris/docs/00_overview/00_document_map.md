@@ -32,6 +32,9 @@
 題材は**テトリス系の落下ブロックゲーム**であるが、以下の前提で扱う。
 
 - 操作感および基本ルールの基準は、**Game Boy版テトリスを参照元のひとつ**として設計する
+- 主軸は A-TYPE とし、B-TYPE は参考仕様として扱う
+- 10×18 盤面、NEXT 1個、Hold なし、Hard drop なしを固定条件とする
+- T-Spin は本プロジェクト独自拡張として採用する
 - 画像・キャラクタ・演出素材は独自制作物を使用する
 - 実装対象はPC上で動作する単体アプリケーションとする
 - 実装言語は、**コードがコンパクトで見通しが良いこと**を重視して選定する
@@ -202,7 +205,7 @@ project-root/
 | ファイル | 役割 |
 |---|---|
 | docs/03_internal_design/30_architecture_design.md | システム全体構成と責務分割を定義する。入力、ゲームロジック、描画、保存などの分担を整理する |
-| docs/03_internal_design/31_domain_model.md | ドメイン概念とその関係を定義する。Board、Piece、Queue、Hold、GameSession などを整理する |
+| docs/03_internal_design/31_domain_model.md | ドメイン概念とその関係を定義する。Board、Piece、NextQueue、GameSession、TSpinResult などを整理する |
 | docs/03_internal_design/32_state_machine_design.md | システム状態と遷移条件を定義する。タイトル、プレイ中、ポーズ、ゲームオーバー等の遷移を明記する |
 | docs/03_internal_design/33_data_model.md | 内部データ構造と保存データ構造を定義する。設定データ、リプレイデータ等を扱う |
 | docs/03_internal_design/34_module_design.md | モジュール単位の責務と境界を定義する。実装ファイル分割の基準として用いる |
