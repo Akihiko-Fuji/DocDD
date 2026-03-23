@@ -1,4 +1,4 @@
-# seminars/mif_2026/00_script.md
+# seminars/00_script.md
 
 # 登壇台本：AIを用いたコード開発 — 仕様の粒度が成果物を決める
 
