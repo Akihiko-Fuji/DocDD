@@ -2,6 +2,7 @@
 
 - 文書ID: DOC-SPC-026
 - 最終更新日: 2026-03-24
+- 文書ステータス: Draft（schema 正本、本文は解説と運用条件の正本）
 - 関連文書:
   - `docs/01_requirements/14_non_functional_requirements.md`
   - `docs/02_external_spec/22_input_operation_spec.md`
