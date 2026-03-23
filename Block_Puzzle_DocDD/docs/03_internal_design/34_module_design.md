@@ -53,7 +53,9 @@ physical input
 - `state_controller` は現在状態に応じて有効入力のみを次段へ流す
 - `game_session` は 1 プレイ単位の状態を保持する
 - ルール処理群は `game_session` を読み書きするが、責務を分割して単体試験可能にする
+  - 設定未指定時は既定値 0 と既定 keymap へ正規化する
 - `renderer` は状態を描画表現へ写像する
+- `spawn_service` は seed 指定時に再現可能な出現列を生成できる
 
 ---
 
@@ -64,7 +66,7 @@ physical input
 | input_mapper | 物理入力から論理入力への変換 | キー押下イベント / ポーリング結果 | `InputSnapshot` | なし |
 | state_controller | 上位状態・サブ状態の遷移制御 | `InputSnapshot`, `GameSession`, 現在状態 | 次状態、状態遷移イベント | `game_session` |
 | game_session | 盤面、スコア、現在状態の集約保持 | 初期設定、状態遷移要求、ルール処理結果 | 参照可能なセッション状態 | 各サービス |
-| spawn_service | 現在ピース出現、NEXT 補充、出現不能判定 | `GameSession`, 乱数 / 出現源 | 新 current piece, game over event | `board_rules` |
+| spawn_service | 現在ピース出現、NEXT 補充、出現不能判定 | `GameSession`, 乱数 / 出現源, `randomizer_seed` | 新 current piece, game over event | `board_rules` |
 | active_piece_service | 移動・回転・ソフトドロップの適用 | `InputSnapshot`, `CurrentPiece`, `Board` | 更新後 `CurrentPiece`, 最終操作種別 | `board_rules` |
 | board_rules | 盤面内判定、衝突判定、ライン完成判定 | `Board`, `CurrentPiece` | 真偽値、完成ライン一覧、更新後盤面 | なし |
 | lock_resolver | 接地・固定・固定後処理の進行 | `GameSession`, `CurrentPiece`, `Board` | 固定済み盤面、消去行数、固定イベント | `board_rules` |
@@ -104,6 +106,7 @@ physical input
   - `create_new_game(config) -> GameSession`
   - `apply_rule_result(session, rule_result) -> GameSession`
   - `snapshot(session) -> SessionView`
+  - `normalize_defaults(config) -> Config`
 - 契約要点
   - セッション集約として状態を保持するが、ルール計算そのものは外へ委譲する
 - テスト観点

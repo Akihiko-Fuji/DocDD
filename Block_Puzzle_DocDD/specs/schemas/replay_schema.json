@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/block-puzzle/replay.schema.json",
+  "title": "Block Puzzle Replay",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "version": { "type": "integer", "minimum": 1 },
+    "start_level": { "type": "integer", "minimum": 0, "maximum": 9 },
+    "randomizer_seed": { "type": "integer", "minimum": 0 },
+    "inputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "frame": { "type": "integer", "minimum": 0 },
+          "buttons": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["Left", "Right", "Down", "A", "B", "START", "SELECT"]
+            }
+          }
+        },
+        "required": ["frame", "buttons"]
+      }
+    }
+  },
+  "required": ["version", "start_level", "randomizer_seed", "inputs"]
+}

@@ -1,0 +1,11 @@
+version: 1
+start_level: 0
+randomizer_seed: 19890614
+keymap:
+  left: ArrowLeft
+  right: ArrowRight
+  down: ArrowDown
+  a: KeyX
+  b: KeyZ
+  start: Enter
+  select: ShiftRight

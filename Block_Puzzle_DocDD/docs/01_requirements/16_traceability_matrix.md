@@ -126,6 +126,18 @@ BR -> UC -> DM -> SR / NSR -> EXT -> Internal Contract -> TC
 | Internal Contract | `scoring_service`, `level_progression_service`, `game_session` |
 | TC | TC-GR-004 |
 
+### 5.5 例5: 設定既定値と再現性
+| 層 | 参照 |
+|---|---|
+| BR | `01_project_charter.md` 4.3, `11_scope_definition.md` 4.2 |
+| UC | UC-001 |
+| DM | `Config`, `InputSnapshot`, `GameSession` |
+| SR | FR-501, FR-502 |
+| NSR | NFR-103, NFR-303, NFR-304 |
+| EXT | `22` 3-7, `26` 1-4 |
+| Internal Contract | `game_session`, `spawn_service` |
+| TC | TC-UI-001, TC-UI-002 |
+
 ### 5.5 例5: ゲームオーバー後の再試行
 | 層 | 参照 |
 |---|---|
