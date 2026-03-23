@@ -49,11 +49,11 @@ physical input
 ```
 
 補足:
-- `input_mapper` は物理キーを論理入力へ変換する
+- `input_mapper` は HID キーボードまたはゲームパッドの物理入力を論理入力へ変換する
 - `state_controller` は現在状態に応じて有効入力のみを次段へ流す
 - `game_session` は 1 プレイ単位の状態を保持する
 - ルール処理群は `game_session` を読み書きするが、責務を分割して単体試験可能にする
-  - 設定未指定時は既定値 0 と既定 keymap へ正規化する
+  - `config.ini` 未指定時は既定値 0、`keyboard`、既定ボタン割当へ正規化する
 - `renderer` は状態を描画表現へ写像する
 - `spawn_service` は seed 指定時に再現可能な出現列を生成できる
 

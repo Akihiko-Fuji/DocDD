@@ -2,7 +2,7 @@
 
 - 文書ID: DOC-OVW-000
 - 文書名: 文書一覧 / Document Map
-- 最終更新日: 2026-03-23
+- 最終更新日: 2026-03-24
 - 対象プロジェクト: 仮称 `falling-block-puzzle`
 - 目的: 本プロジェクトで管理する文書の役割、参照順序、更新責任範囲を明確化する
 
@@ -36,6 +36,7 @@
 - T-Spin は**本プロジェクト独自拡張**として追加する
 - 画像・キャラクタ・演出素材は独自制作物を使用する
 - 実装対象は PC 上で動作する単体アプリケーションとする
+- 想定描画解像度は 640×480 とし、PC 利用を前提とした固定基準解像度とする
 - 主題はゲーム作品の差別化ではなく、**文書整備の一貫性と追跡可能性**にある
 
 ---
@@ -106,6 +107,7 @@
 | `docs/00_overview/02_glossary.md` | 用語集。Board、Spawn、Lock、ARE、Soft Drop などを定義する |
 | `docs/00_overview/03_assumptions_and_constraints.md` | 前提条件、プラットフォーム、技術制約、運用制約を整理する |
 | `docs/00_overview/04_reference_baseline_and_deltas.md` | Game Boy 版基準として継承した要素と独自拡張・除外を整理する |
+| `docs/00_overview/05_document_maturity_matrix.md` | 文書成熟度と利用可否を明示する |
 
 ### 6.2 Requirements
 
@@ -130,12 +132,12 @@
 | `docs/02_external_spec/24_piece_rotation_collision_spec.md` | 回転、衝突、失敗、T-Spin 前提を定義する |
 | `docs/02_external_spec/25_pause_gameover_resume_spec.md` | ポーズ、再開、ゲームオーバー、再試行を定義する |
 | `docs/02_external_spec/26_save_replay_config_spec.md` | 設定・保存・リプレイの予約仕様を定義する |
-| `docs/02_external_spec/27_runtime_flowchart_mermaid.md` | 主要フローを Mermaid で可視化する |
 
 ### 6.4 Internal Design
 
 | ファイル | 役割 |
 |---|---|
+| `docs/03_internal_design/27_runtime_flowchart_mermaid.md` | ランタイム処理順と主要分岐を Mermaid で可視化する |
 | `docs/03_internal_design/30_architecture_design.md` | システム全体構成と責務分割を定義する |
 | `docs/03_internal_design/31_domain_model.md` | ドメイン概念とその関係を定義する |
 | `docs/03_internal_design/32_state_machine_design.md` | システム状態と遷移条件を定義する |
@@ -156,10 +158,13 @@
 | `docs/04_quality_assurance/43_test_cases_edge_conditions.md` | 境界条件や非採用機能の試験項目を定義する |
 | `docs/04_quality_assurance/44_performance_test_plan.md` | 性能確認方針を定義する |
 | `docs/04_quality_assurance/45_definition_of_done.md` | 文書・実装・テストを含む完了条件を定義する |
+| `docs/04_quality_assurance/46_test_fixtures_catalog.md` | 再利用可能な盤面・入力・開始状態 fixture を定義する |
 
 ### 6.6 Records / Management
 
 意思決定、変更、レビュー、WBS、マイルストーン、リスクを管理する。特に仕様差分や独自拡張は `60_decision_log.md` / `61_change_log.md` / `62_review_log.md` を正本とする。
+
+補助運用文書として、`46_test_fixtures_catalog.md`・`05_document_maturity_matrix.md`・`56_document_update_checklist.md` を追加し、試験再現性、文書成熟度、変更手順の実務運用を補強する。
 
 ---
 

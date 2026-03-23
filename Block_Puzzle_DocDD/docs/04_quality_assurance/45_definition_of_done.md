@@ -1,7 +1,7 @@
 # 完了の定義 / Definition of Done
 
 - 文書ID: DOC-QA-045
-- 最終更新日: 2026-03-23
+- 最終更新日: 2026-03-24
 
 ## 1. 本書の目的
 本書は、実装や文書作業が「完了した」と言える条件を、**Product / Document / Traceability** の 3 種に分けて定義する。
@@ -25,6 +25,8 @@
 - 変更理由が Decision Log / Change Log / Review Log に残っている
 - 変更事例文書により波及例を示せる
 - 空または薄い補助文書が実装判断を阻害しない粒度になっている
+- `05_document_maturity_matrix.md` により、Stable / Reserved / Draft の違いが可視化されている
+- `56_document_update_checklist.md` が変更時の実行用 checklist として利用可能である
 
 ---
 
@@ -35,6 +37,7 @@
 - 非採用機能も制約として追跡されている
 - T-Spin 採用のような変更が上流から下流まで同期している
 - config / replay のような予約仕様でも、要求と schema/sample へ接続できる
+- テストケースが `46_test_fixtures_catalog.md` の具体前提へ接続されている
 
 ---
 
@@ -42,14 +45,17 @@
 ### 5.1 Spec-Driven
 - コア10文書が正本として機能し、暗黙仕様が残っていない
 - Game Boy 基準で補完した項目が仕様または ADR に明示されている
+- replay/config のような予約仕様も、未決事項と固定済み事項が分離されている
 
 ### 5.2 Acceptance-Driven
 - 各主要文書に受入観点があり、レビューで合否判断できる
 - 主要仕様に対する代表 TC が存在する
+- TC に前提 fixture、優先度、実施方式、結果欄がある
 
 ### 5.3 Diagram-Driven
-- `27_runtime_flowchart_mermaid.md` と `38_runtime_state_transition_mermaid.md` が本文と矛盾しない
+- `docs/03_internal_design/27_runtime_flowchart_mermaid.md` と `38_runtime_state_transition_mermaid.md` が本文と矛盾しない
 - 図だけ見ても主要フローと責務境界を誤解しない
+- 図の節点名が `32_state_machine_design.md` と `34_module_design.md` の用語に対応している
 
 ---
 
