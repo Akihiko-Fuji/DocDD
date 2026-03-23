@@ -131,7 +131,7 @@
 | `docs/02_external_spec/23_scoring_level_spec.md` | スコア計算、レベル上昇、速度表を定義する |
 | `docs/02_external_spec/24_piece_rotation_collision_spec.md` | 回転、衝突、失敗、T-Spin 前提を定義する |
 | `docs/02_external_spec/25_pause_gameover_resume_spec.md` | ポーズ、再開、ゲームオーバー、再試行を定義する |
-| `docs/02_external_spec/26_save_replay_config_spec.md` | 設定・保存・リプレイの予約仕様を定義する |
+| `docs/02_external_spec/26_save_replay_config_spec.md` | 設定・保存・リプレイ仕様と schema 正本方針を定義する |
 
 ### 6.4 Internal Design
 
@@ -147,6 +147,7 @@
 | `docs/03_internal_design/36_input_timing_design.md` | 入力受付タイミング、押下継続、リピート挙動を定義する |
 | `docs/03_internal_design/37_error_handling_policy.md` | 異常系ポリシーを定義する |
 | `docs/03_internal_design/38_runtime_state_transition_mermaid.md` | 状態遷移を Mermaid で可視化する |
+| `docs/03_internal_design/39_interface_contract.md` | モジュール間のデータ契約と前後条件を一覧化する |
 
 ### 6.5 Quality Assurance
 

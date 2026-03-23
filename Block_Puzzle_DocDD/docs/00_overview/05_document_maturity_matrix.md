@@ -82,11 +82,17 @@
 | `20_game_rules_spec.md` | 外部ルール仕様 | Stable | Yes | B-TYPE 詳細化時の分離 |
 | `21_ui_screen_spec.md` | 画面仕様 | Stable | Yes | 保存 UI 採用時の画面追加 |
 | `24_piece_rotation_collision_spec.md` | 回転・衝突 | Stable | Yes | 実装検証結果反映 |
-| `26_save_replay_config_spec.md` | 保存/再現予約仕様 | Reserved | Limited | 永続化タイミング、version 戦略 |
+| `26_save_replay_config_spec.md` | 保存/再現予約仕様 | Draft | Conditional | スキーマ正本方針、保存タイミング、version 戦略 |
 | `docs/03_internal_design/27_runtime_flowchart_mermaid.md` | 処理順図 | Reference | Conditional | 実装名との同期維持 |
+| `30_architecture_design.md` | 上位アーキテクチャ境界 | Stable | Yes | 実装との差分レビュー運用 |
+| `31_domain_model.md` | ドメイン概念と集約境界 | Stable | Yes | 将来拡張概念の整理 |
 | `32_state_machine_design.md` | 状態設計 | Stable | Yes | B-TYPE 予約状態の扱い |
 | `33_data_model.md` | データ構造設計 | Stable | Yes | enum 詳細と validation 規約 |
 | `34_module_design.md` | モジュール責務 | Stable | Yes | 実装契約粒度の追加 |
+| `35_rendering_design.md` | 描画設計 | Stable | Yes | 実 UI 実装との差分管理 |
+| `36_input_timing_design.md` | 入力・時間軸設計 | Stable | Yes | 自動試験との接続強化 |
+| `37_error_handling_policy.md` | エラー処理設計 | Stable | Yes | 診断ログ運用規約 |
+| `39_interface_contract.md` | モジュール間契約一覧 | Draft | Yes | 実装署名との同期維持 |
 | `40_test_strategy.md` | QA 方針 | Stable | Yes | automation 境界の詳細化 |
 | `41_test_cases_game_rules.md` | ルール試験仕様 | Draft | Yes | 実施結果の蓄積 |
 | `42_test_cases_ui_input.md` | UI/入力試験仕様 | Draft | Yes | usability 記録欄の蓄積 |
