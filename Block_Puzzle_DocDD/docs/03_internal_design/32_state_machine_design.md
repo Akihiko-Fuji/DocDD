@@ -12,6 +12,7 @@
   - `docs/02_external_spec/23_scoring_level_spec.md`
   - `docs/02_external_spec/24_piece_rotation_collision_spec.md`
   - `docs/02_external_spec/25_pause_gameover_resume_spec.md`
+  - `docs/03_internal_design/38_runtime_state_transition_mermaid.md`
   - `docs/04_quality_assurance/40_test_strategy.md`
 
 ---
@@ -58,6 +59,11 @@ ST-GAMEOVER --title--> ST-TITLE
 
 ---
 
+
+## 4.1 状態遷移図（Mermaid）
+状態遷移を図として確認したい場合は、補助文書 `38_runtime_state_transition_mermaid.md` を参照すること。
+
+---
 ## 5. 各上位状態の責務
 ### 5.1 ST-TITLE
 - タイトル表示
