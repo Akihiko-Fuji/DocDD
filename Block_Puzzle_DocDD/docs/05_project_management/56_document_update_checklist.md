@@ -9,6 +9,9 @@
   - `docs/04_quality_assurance/45_definition_of_done.md`
 
 ## 1. 使い方
+本書の役割は **個別変更時に実行するチェックリスト** である。
+Issue の分類、優先度、close 条件の正本定義は `54_issue_management.md` に委ね、本書ではその運用を実際の変更作業へ落とし込む。
+
 - 変更着手前に変更種別を 1 つ以上選ぶ
 - 影響文書確認欄を埋め、未該当は `N/A` とする
 - 変更完了前に traceability / record / DoD の確認を行う

@@ -67,6 +67,10 @@
 
 ## 3. 上位状態遷移図
 
+上位図の `ST-PLAY -> ST-GAMEOVER` は、特定の 1 条件だけでなく、`32_state_machine_design.md` で定義した**ゲームオーバー条件全体**を束ねた遷移として読む。
+詳細な入口条件は 4 章のサブ状態図へ委譲する。
+
+
 ```mermaid
 stateDiagram-v2
     [*] --> ST_BOOT : 起動
@@ -108,6 +112,7 @@ stateDiagram-v2
 
 ### 補足
 - 現行フローでは、A-TYPE 主軸のため `ST-MODE-SELECT` および `ST-SETUP-B` は予約状態に留める
+- `ST-PLAY -> ST-GAMEOVER` は「出現不能」のみを指すのではなく、サブ状態図で定義する複数のゲームオーバー入口を代表している
 - `ST-PLAY` の内部詳細は次節のサブ状態図で扱う
 
 ---
