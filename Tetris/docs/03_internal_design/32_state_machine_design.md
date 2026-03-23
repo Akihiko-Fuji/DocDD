@@ -50,7 +50,7 @@
 ST-BOOT -> ST-TITLE -> ST-SETUP-A -> ST-PLAY
 ST-PLAY --START--> ST-PAUSE
 ST-PAUSE --START--> ST-PLAY
-ST-PAUSE --B/ESC--> ST-TITLE
+ST-PAUSE --B(PCではESC可)--> ST-TITLE
 ST-PLAY --game over--> ST-GAMEOVER
 ST-GAMEOVER --retry--> ST-SETUP-A
 ST-GAMEOVER --title--> ST-TITLE
@@ -131,7 +131,7 @@ PL-END-CHECK
 |---|---|---|---|---|---|
 | 左右 | 無効 | 値変更可 | 有効 | 無効 | 無効 |
 | 下 | 無効 | 無効 | 有効 | 無効 | 無効 |
-| A/B | 無効 | 確定 / 戻る補助可 | 有効 | 無効 | 再試行補助可 |
+| A/B | 無効 | 確定 / 戻る補助可 | 有効 | B は無効、戻るは B（PC では ESC 可） | A は再試行補助可、B（PC では ESC 可）はタイトル復帰 |
 | START | 開始 | 開始確定 | 一時停止 | 再開 | 再試行 |
 | SELECT | 無効 | 予約 | 予約 | 無効 | 無効 |
 

@@ -4,7 +4,7 @@
 - 文書名: トレーサビリティマトリクス / Traceability Matrix
 - 最終更新日: 2026-03-23
 - 対象プロジェクト: 仮称 `falling-block-puzzle`
-- 目的: BR / UC / DM / SR / NSR / EXT / Internal Contract / TC の 7 軸超で、上流意図から下流検証までを縦に追える状態を保つ
+- 目的: BR を起点とし、その下流に UC / DM / SR / NSR / EXT / Internal Contract / TC の 7 つの主要追跡軸を持つ形で、上流意図から下流検証までを縦に追える状態を保つ
 - 関連文書:
   - `docs/00_overview/01_project_charter.md`
   - `docs/01_requirements/11_scope_definition.md`
@@ -30,7 +30,7 @@
 
 本書は、DocDD の説明用サンプルとして、**上流の意図から下流のテストまでを一筆書きで辿れること**を明示するための文書である。
 
-本書では、単なる FR 起点の対応表ではなく、上流層と下流層を分けて整理する。
+本書では、単なる FR 起点の対応表ではなく、BR を起点にその下流 7 軸を追う形で上流層と下流層を分けて整理する。
 
 ---
 
