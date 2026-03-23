@@ -10,162 +10,88 @@
 
 ## 1. この文書の目的
 
-本書は、落下ブロックゲームを題材とした**ドキュメント駆動開発（Document-Driven Development / DocDD）見本プロジェクト**において、各文書の役割と相互関係を定義するための文書である。
+本書は、落下ブロックゲームを題材とした**ドキュメント駆動開発（Document-Driven Development / DocDD）見本プロジェクト**において、各文書の役割、参照順序、更新責務、およびレビュー観点を定義する入口文書である。
 
-本プロジェクトでは、単にコードを書くのではなく、以下の順序を重視する。
+本プロジェクトでは、コードの前に以下の順序で認識を固定する。
 
-1. 何を作るかを定義する
-2. 何を満たすべきかを要求として定義する
-3. 外から見た振る舞いを仕様として定義する
-4. 内部構造を設計として定義する
-5. テスト観点を定義する
-6. 変更履歴と意思決定を記録する
-
-本書は、その全体像を示す入口文書である。
+1. 何を作るかをプロジェクト文書で定義する
+2. 何を満たすべきかを要求文書で定義する
+3. ユーザーから見える挙動を外部仕様で定義する
+4. 内部責務と状態遷移を設計文書で定義する
+5. 要求と仕様をどう検証するかを品質文書で定義する
+6. 変更理由とレビュー結果を記録文書へ残す
 
 ---
 
 ## 2. プロジェクトの位置付け
 
-本プロジェクトは、公開可能な題材を用いて、実務に近い粒度でDocDDの流れを示すことを目的とする。
+本プロジェクトは、公開可能な題材を用いて、実務に近い粒度で DocDD の流れを示すことを目的とする。
 
-題材は**テトリス系の落下ブロックゲーム**であるが、以下の前提で扱う。
+題材は**Game Boy 版テトリスをベースラインとする落下ブロックゲーム**であり、以下を前提に扱う。
 
-- 操作感および基本ルールの基準は、**Game Boy版テトリスを参照元のひとつ**として設計する
-- 主軸は A-TYPE とし、B-TYPE は参考仕様として扱う
-- 10×18 盤面、NEXT 1個、Hold なし、Hard drop なしを固定条件とする
-- T-Spin は本プロジェクト独自拡張として採用する
+- 主軸は A-TYPE とし、B-TYPE は参照仕様として併記する
+- 盤面は 10×18、NEXT は 1 個、Hold なし、Hard drop なしとする
+- SELECT による NEXT 表示切替は Game Boy 版準拠の補助仕様として扱う
+- 7-bag は採用せず、Game Boy 系ランダマイザ方針を維持する
+- T-Spin は**本プロジェクト独自拡張**として追加する
 - 画像・キャラクタ・演出素材は独自制作物を使用する
-- 実装対象はPC上で動作する単体アプリケーションとする
-- 実装言語は、**コードがコンパクトで見通しが良いこと**を重視して選定する
-- ただし、本プロジェクトの主題はコード技巧ではなく、**DocDD手法と文書整備の一貫性**にある
+- 実装対象は PC 上で動作する単体アプリケーションとする
+- 主題はゲーム作品の差別化ではなく、**文書整備の一貫性と追跡可能性**にある
 
 ---
 
 ## 3. 文書体系の全体像
 
-本プロジェクトの文書は、以下の6系統で構成する。
+本プロジェクトの文書は以下の 6 系統で構成する。
 
-1. **Overview**  
-   文書全体の入口、用語、前提、制約を示す
-
-2. **Requirements**  
-   何を作るか、何を満たすべきかを示す
-
-3. **External Specification**  
-   ユーザーから見える振る舞いとルールを示す
-
-4. **Internal Design**  
-   内部構造、状態遷移、モジュール責務を示す
-
-5. **Quality Assurance**  
-   テスト方針と品質確認方法を示す
-
-6. **Records / Management**  
-   意思決定、変更履歴、レビュー結果を記録する
+1. **Overview**: 前提、用語、参照元差分、文書読解順を示す
+2. **Requirements**: スコープ、要求、受入条件、トレーサビリティを示す
+3. **External Specification**: ユーザーから見えるゲーム挙動、UI、操作、得点、状態を示す
+4. **Internal Design**: 状態遷移、モジュール責務、データ構造、描画/入力処理方針を示す
+5. **Quality Assurance**: テスト方針、テストケース、DoD を示す
+6. **Records / Management**: 意思決定、変更、レビュー、リスク、運営方針を記録する
 
 ---
 
-## 4. ディレクトリ構成
+## 4. コア 10 文書
 
-```text
-project-root/
-├─ README.md
-├─ docs/
-│  ├─ 00_overview/
-│  │  ├─ 00_document_map.md
-│  │  ├─ 01_project_charter.md
-│  │  ├─ 02_glossary.md
-│  │  ├─ 03_assumptions_and_constraints.md
-│  │  └─ 04_reference_baseline_and_deltas.md
-│  │
-│  ├─ 01_requirements/
-│  │  ├─ 10_product_vision.md
-│  │  ├─ 11_scope_definition.md
-│  │  ├─ 12_use_cases.md
-│  │  ├─ 13_functional_requirements.md
-│  │  ├─ 14_non_functional_requirements.md
-│  │  ├─ 15_acceptance_criteria.md
-│  │  └─ 16_traceability_matrix.md
-│  │
-│  ├─ 02_external_spec/
-│  │  ├─ 20_game_rules_spec.md
-│  │  ├─ 21_ui_screen_spec.md
-│  │  ├─ 22_input_operation_spec.md
-│  │  ├─ 23_scoring_level_spec.md
-│  │  ├─ 24_piece_rotation_collision_spec.md
-│  │  ├─ 25_pause_gameover_resume_spec.md
-│  │  ├─ 26_save_replay_config_spec.md
-│  │  └─ 27_runtime_flowchart_mermaid.md
-│  │
-│  ├─ 03_internal_design/
-│  │  ├─ 30_architecture_design.md
-│  │  ├─ 31_domain_model.md
-│  │  ├─ 32_state_machine_design.md
-│  │  ├─ 33_data_model.md
-│  │  ├─ 34_module_design.md
-│  │  ├─ 35_rendering_design.md
-│  │  ├─ 36_input_timing_design.md
-│  │  ├─ 37_error_handling_policy.md
-│  │  └─ 38_runtime_state_transition_mermaid.md
-│  │
-│  ├─ 04_quality_assurance/
-│  │  ├─ 40_test_strategy.md
-│  │  ├─ 41_test_cases_game_rules.md
-│  │  ├─ 42_test_cases_ui_input.md
-│  │  ├─ 43_test_cases_edge_conditions.md
-│  │  ├─ 44_performance_test_plan.md
-│  │  └─ 45_definition_of_done.md
-│  │
-│  ├─ 05_project_management/
-│  │  ├─ 50_development_policy.md
-│  │  ├─ 51_work_breakdown_structure.md
-│  │  ├─ 52_milestones.md
-│  │  ├─ 53_change_management.md
-│  │  ├─ 54_issue_management.md
-│  │  └─ 55_risk_register.md
-│  │
-│  └─ 06_records/
-│     ├─ 60_decision_log.md
-│     ├─ 61_change_log.md
-│     ├─ 62_review_log.md
-│     ├─ 63_meeting_notes.md
-│     └─ 64_change_case_tspin_adoption.md
-│
-├─ adr/
-│  ├─ ADR-0001-game-loop-model.md
-│  ├─ ADR-0002-randomizer-policy.md
-│  └─ ADR-0003-input-buffer-policy.md
-│
-├─ specs/
-│  ├─ examples/
-│  │  ├─ replay_sample_01.json
-│  │  └─ config_sample_01.yaml
-│  └─ schemas/
-│     ├─ replay_schema.json
-│     └─ config_schema.json
-│
-└─ src/
-```
+本プロジェクトでは、以下の 10 文書を基準文書とし、DocDD の最小骨格として最優先で整備する。
+
+| 区分 | ファイル | 役割 |
+|---|---|---|
+| Overview | `docs/00_overview/00_document_map.md` | 文書群の入口と読解順を定義する |
+| Overview | `docs/00_overview/01_project_charter.md` | 目的、成功条件、成果物、レビュー基準を定義する |
+| Requirements | `docs/01_requirements/11_scope_definition.md` | 対象/非対象と Game Boy 基準との差分境界を定義する |
+| Requirements | `docs/01_requirements/13_functional_requirements.md` | 機能要求を ID 付きで定義する |
+| Requirements | `docs/01_requirements/14_non_functional_requirements.md` | 応答性、再現性、追跡可能性など品質要求を定義する |
+| External Spec | `docs/02_external_spec/20_game_rules_spec.md` | ルール全体、ゲーム進行、数値基準の外部仕様を定義する |
+| External Spec | `docs/02_external_spec/21_ui_screen_spec.md` | 画面群、表示要素、画面遷移、画面別受理入力を定義する |
+| External Spec | `docs/02_external_spec/24_piece_rotation_collision_spec.md` | 回転、衝突、失敗条件、T-Spin 前提を定義する |
+| Internal Design | `docs/03_internal_design/32_state_machine_design.md` | 上位状態とプレイ中サブ状態の設計を定義する |
+| QA | `docs/04_quality_assurance/40_test_strategy.md` | 文書起点のテスト導出方針を定義する |
 
 ---
 
-## 5. 優先制作対象（今回のコア文書）
+## 5. 今回のレビューで補強した重点論点
 
-本プロジェクトでは、まず以下の文書を優先制作対象とする。
+今回の改修では、コア 10 文書に対して以下の不足を重点修正対象とした。
 
-- docs/00_overview/00_document_map.md
-- docs/00_overview/01_project_charter.md
-- docs/01_requirements/11_scope_definition.md
-- docs/01_requirements/13_functional_requirements.md
-- docs/01_requirements/14_non_functional_requirements.md
-- docs/02_external_spec/20_game_rules_spec.md
-- docs/02_external_spec/21_ui_screen_spec.md
-- docs/02_external_spec/24_piece_rotation_collision_spec.md
-- docs/03_internal_design/32_state_machine_design.md
-- docs/04_quality_assurance/40_test_strategy.md
+1. **Spec-Driven の不足**
+   - SELECT の扱い、B-TYPE の参照粒度、Game Boy 速度表などが暗黙だった
+   - ルール順序と画面仕様の接続が弱かった
+2. **Acceptance-Driven の不足**
+   - 文書単体でレビュー完了判定できる観点が薄い箇所があった
+   - 「どこが Game Boy 準拠で、どこが独自拡張か」が一目で判断しづらかった
+3. **Diagram-Driven の不足**
+   - 状態図やフローチャートと本文の同期条件が弱かった
+   - 図からテストケースへ落とせる粒度が不足していた
 
-これらをコア10文書と位置付け、DocDDの骨格を先に成立させる。
+これを受け、各コア文書に以下を追加・強化する。
+
+- Game Boy 基準値・暗黙仕様の明文化
+- 受入観点の明文化
+- 状態・責務・図面の同期ルール
+- 変更影響の参照先
 
 ---
 
@@ -175,143 +101,110 @@ project-root/
 
 | ファイル | 役割 |
 |---|---|
-| docs/00_overview/00_document_map.md | 本文書。全文書の一覧、役割、参照順序、更新方針を示す。プロジェクトの入口として機能する |
-| docs/00_overview/01_project_charter.md | プロジェクトの目的、背景、成果物、対象読者を定義する。「なぜこのプロジェクトを行うのか」を示す |
-| docs/00_overview/02_glossary.md | 用語集。ピース、盤面、スポーン、ロック、ホールド等の用語を定義する。文書間の語義ブレを防ぐ |
-| docs/00_overview/03_assumptions_and_constraints.md | 前提条件と制約を整理する。対応プラットフォーム、対象外範囲、技術制約などを記載する |
-| docs/00_overview/04_reference_baseline_and_deltas.md | Game Boy 版基準として継承した要素と、本見本独自の拡張・除外を整理する。参照元との差分を 1 枚で確認できる |
+| `docs/00_overview/00_document_map.md` | 本文書。全文書の一覧、役割、参照順序、更新方針を示す |
+| `docs/00_overview/01_project_charter.md` | プロジェクトの目的、背景、成果物、成功条件、レビュー方針を定義する |
+| `docs/00_overview/02_glossary.md` | 用語集。Board、Spawn、Lock、ARE、Soft Drop などを定義する |
+| `docs/00_overview/03_assumptions_and_constraints.md` | 前提条件、プラットフォーム、技術制約、運用制約を整理する |
+| `docs/00_overview/04_reference_baseline_and_deltas.md` | Game Boy 版基準として継承した要素と独自拡張・除外を整理する |
 
 ### 6.2 Requirements
 
 | ファイル | 役割 |
 |---|---|
-| docs/01_requirements/10_product_vision.md | 製品として何を目指すかを示す。プロジェクトチャーターよりも、プロダクト志向で記述する |
-| docs/01_requirements/11_scope_definition.md | 対象範囲 / 非対象範囲を定義する。「どこまで作るか」「どこから先は作らないか」を明確にする |
-| docs/01_requirements/12_use_cases.md | 利用者視点での代表的な利用場面を定義する。例: ゲーム開始、ピース操作、一時停止、設定変更 |
-| docs/01_requirements/13_functional_requirements.md | 機能要求を一覧化する。システムが提供すべき機能を、要求ID付きで定義する |
-| docs/01_requirements/14_non_functional_requirements.md | 非機能要求を定義する。操作応答性、再現性、保守性、可読性、移植性などを扱う |
-| docs/01_requirements/15_acceptance_criteria.md | 受入条件を定義する。「何をもって満たしたと判断するか」を明確にする |
-| docs/01_requirements/16_traceability_matrix.md | 要求、仕様、設計、テストの対応関係を管理する。DocDDの追跡可能性を担保する中核文書 |
+| `docs/01_requirements/10_product_vision.md` | プロダクト視点の目標と価値を示す |
+| `docs/01_requirements/11_scope_definition.md` | 対象範囲 / 非対象範囲 / 参照仕様の扱いを定義する |
+| `docs/01_requirements/12_use_cases.md` | 利用者視点の代表ユースケースを整理する |
+| `docs/01_requirements/13_functional_requirements.md` | 機能要求を要求 ID 付きで定義する |
+| `docs/01_requirements/14_non_functional_requirements.md` | 非機能要求を定義する |
+| `docs/01_requirements/15_acceptance_criteria.md` | 受入基準を定義する |
+| `docs/01_requirements/16_traceability_matrix.md` | 要求、仕様、設計、テストの対応関係を管理する |
 
 ### 6.3 External Specification
 
 | ファイル | 役割 |
 |---|---|
-| docs/02_external_spec/20_game_rules_spec.md | ゲームルール全体の外部仕様を定義する。盤面、落下、固定、ライン消去、ゲームオーバー条件などを扱う |
-| docs/02_external_spec/21_ui_screen_spec.md | 画面構成、表示要素、画面遷移を定義する。タイトル、プレイ画面、ポーズ、リザルト等を整理する |
-| docs/02_external_spec/22_input_operation_spec.md | 入力手段と操作割当を定義する。キーボード操作や各入力の意味を整理する |
-| docs/02_external_spec/23_scoring_level_spec.md | スコア計算、レベル上昇、難易度変化を定義する。プレイ結果に関する数値仕様を明文化する |
-| docs/02_external_spec/24_piece_rotation_collision_spec.md | ピース回転と衝突判定の外部仕様を定義する。壁際、床際、他ブロック接触時の扱いを明確化する |
-| docs/02_external_spec/25_pause_gameover_resume_spec.md | ポーズ、再開、ゲームオーバー、リトライの仕様を定義する |
-| docs/02_external_spec/26_save_replay_config_spec.md | 設定保存、リプレイ保存、ロード対象を定義する。永続化対象の外部仕様を扱う |
-| docs/02_external_spec/27_runtime_flowchart_mermaid.md | 画面遷移とプレイフレーム処理順を Mermaid フローチャートで補助的に可視化する |
+| `docs/02_external_spec/20_game_rules_spec.md` | ルール全体、進行、B-TYPE 参照条件、速度・得点・終了条件を定義する |
+| `docs/02_external_spec/21_ui_screen_spec.md` | 画面構成、表示要素、画面遷移、NEXT 表示方針を定義する |
+| `docs/02_external_spec/22_input_operation_spec.md` | 入力手段、論理入力、SELECT 含む状態別入力を定義する |
+| `docs/02_external_spec/23_scoring_level_spec.md` | スコア計算、レベル上昇、速度表を定義する |
+| `docs/02_external_spec/24_piece_rotation_collision_spec.md` | 回転、衝突、失敗、T-Spin 前提を定義する |
+| `docs/02_external_spec/25_pause_gameover_resume_spec.md` | ポーズ、再開、ゲームオーバー、再試行を定義する |
+| `docs/02_external_spec/26_save_replay_config_spec.md` | 設定・保存・リプレイの予約仕様を定義する |
+| `docs/02_external_spec/27_runtime_flowchart_mermaid.md` | 主要フローを Mermaid で可視化する |
 
 ### 6.4 Internal Design
 
 | ファイル | 役割 |
 |---|---|
-| docs/03_internal_design/30_architecture_design.md | システム全体構成と責務分割を定義する。入力、ゲームロジック、描画、保存などの分担を整理する |
-| docs/03_internal_design/31_domain_model.md | ドメイン概念とその関係を定義する。Board、Piece、NextQueue、GameSession、TSpinResult などを整理する |
-| docs/03_internal_design/32_state_machine_design.md | システム状態と遷移条件を定義する。タイトル、プレイ中、ポーズ、ゲームオーバー等の遷移を明記する |
-| docs/03_internal_design/33_data_model.md | 内部データ構造と保存データ構造を定義する。設定データ、リプレイデータ等を扱う |
-| docs/03_internal_design/34_module_design.md | モジュール単位の責務と境界を定義する。実装ファイル分割の基準として用いる |
-| docs/03_internal_design/35_rendering_design.md | 描画方式、再描画タイミング、表示責務を定義する |
-| docs/03_internal_design/36_input_timing_design.md | 入力受付タイミング、押下継続、リピート挙動を定義する |
-| docs/03_internal_design/37_error_handling_policy.md | 異常系の扱い方針を定義する。不正入力、壊れた設定、保存失敗時の方針を扱う |
-| docs/03_internal_design/38_runtime_state_transition_mermaid.md | 上位状態とプレイ中サブ状態を Mermaid 状態遷移図で補助的に可視化する |
+| `docs/03_internal_design/30_architecture_design.md` | システム全体構成と責務分割を定義する |
+| `docs/03_internal_design/31_domain_model.md` | ドメイン概念とその関係を定義する |
+| `docs/03_internal_design/32_state_machine_design.md` | システム状態と遷移条件を定義する |
+| `docs/03_internal_design/33_data_model.md` | 内部データ・保存データ構造を定義する |
+| `docs/03_internal_design/34_module_design.md` | モジュール責務と内部契約を定義する |
+| `docs/03_internal_design/35_rendering_design.md` | 描画方式、再描画責務、視認性要件を定義する |
+| `docs/03_internal_design/36_input_timing_design.md` | 入力受付タイミング、押下継続、リピート挙動を定義する |
+| `docs/03_internal_design/37_error_handling_policy.md` | 異常系ポリシーを定義する |
+| `docs/03_internal_design/38_runtime_state_transition_mermaid.md` | 状態遷移を Mermaid で可視化する |
 
 ### 6.5 Quality Assurance
 
 | ファイル | 役割 |
 |---|---|
-| docs/04_quality_assurance/40_test_strategy.md | 品質確認の全体方針を定義する。何を、どの観点で、どう検証するかを示す |
-| docs/04_quality_assurance/41_test_cases_game_rules.md | ゲームルールに関する試験項目を定義する |
-| docs/04_quality_assurance/42_test_cases_ui_input.md | UIおよび入力操作に関する試験項目を定義する |
-| docs/04_quality_assurance/43_test_cases_edge_conditions.md | 境界条件や例外的状況に関する試験項目を定義する |
-| docs/04_quality_assurance/44_performance_test_plan.md | 性能観点の確認方針を定義する。フレーム安定性、長時間動作等を扱う |
-| docs/04_quality_assurance/45_definition_of_done.md | 完了条件を定義する。実装完了ではなく、文書・テスト・記録まで含めた完了条件を扱う |
+| `docs/04_quality_assurance/40_test_strategy.md` | 品質確認の全体方針を定義する |
+| `docs/04_quality_assurance/41_test_cases_game_rules.md` | ルール、得点、進行の試験項目を定義する |
+| `docs/04_quality_assurance/42_test_cases_ui_input.md` | UI と入力操作の試験項目を定義する |
+| `docs/04_quality_assurance/43_test_cases_edge_conditions.md` | 境界条件や非採用機能の試験項目を定義する |
+| `docs/04_quality_assurance/44_performance_test_plan.md` | 性能確認方針を定義する |
+| `docs/04_quality_assurance/45_definition_of_done.md` | 文書・実装・テストを含む完了条件を定義する |
 
-### 6.6 Project Management
+### 6.6 Records / Management
 
-| ファイル | 役割 |
-|---|---|
-| docs/05_project_management/50_development_policy.md | 開発ルール全般を定義する。変更時の文書更新原則、レビュー方針等を扱う |
-| docs/05_project_management/51_work_breakdown_structure.md | 作業分解構成を定義する。進捗管理と分担整理の基礎とする |
-| docs/05_project_management/52_milestones.md | マイルストーンを定義する。フェーズ区切りを明確にする |
-| docs/05_project_management/53_change_management.md | 仕様変更や設計変更の管理方法を定義する |
-| docs/05_project_management/54_issue_management.md | 課題、バグ、改善要求の管理方法を定義する |
-| docs/05_project_management/55_risk_register.md | 想定リスクと対応方針を定義する |
-
-### 6.7 Records
-
-| ファイル | 役割 |
-|---|---|
-| docs/06_records/60_decision_log.md | 日々の判断・採否・理由を記録する。ADRより軽量な記録もここに残す |
-| docs/06_records/61_change_log.md | バージョン単位の変更履歴を記録する |
-| docs/06_records/62_review_log.md | レビュー指摘、判断、対応結果を記録する |
-| docs/06_records/63_meeting_notes.md | 打合せメモや検討記録を残す |
-| docs/06_records/64_change_case_tspin_adoption.md | T-Spin 採用を題材に、変更要求が各文書へ波及する様子を示す見本ケースを記録する |
-
-### 6.8 ADR
-
-| ファイル | 役割 |
-|---|---|
-| adr/ADR-0001-game-loop-model.md | 固定更新幅、入力評価順、固定後処理順に関する意思決定を記録する |
-| adr/ADR-0002-randomizer-policy.md | Game Boy 系 randomizer と seed 再現性方針に関する意思決定を記録する |
-| adr/ADR-0003-input-buffer-policy.md | START 優先、同時押下相殺、pause 再開直後の入力バッファ方針を記録する |
-
-ADRは、なぜその方式を選んだのかを残すための設計判断記録とする。
-
-### 6.9 Specs
-
-| ファイル | 役割 |
-|---|---|
-| specs/examples/replay_sample_01.json | リプレイデータの最小サンプルを格納する |
-| specs/examples/config_sample_01.yaml | 設定ファイルの最小サンプルを格納する |
-| specs/schemas/replay_schema.json | リプレイデータの予約形式定義を格納する |
-| specs/schemas/config_schema.json | 設定ファイルの予約形式定義を格納する |
+意思決定、変更、レビュー、WBS、マイルストーン、リスクを管理する。特に仕様差分や独自拡張は `60_decision_log.md` / `61_change_log.md` / `62_review_log.md` を正本とする。
 
 ---
 
-## 7. 参照順序
-
-新規参画者、レビュー担当者、実装担当者は、原則として以下の順に参照する。
+## 7. 推奨参照順序
 
 ### 7.1 最低限の把握順序
 
-1. 00_document_map.md
-2. 01_project_charter.md
-3. 11_scope_definition.md
-4. 13_functional_requirements.md
-5. 14_non_functional_requirements.md
+1. `00_document_map.md`
+2. `01_project_charter.md`
+3. `04_reference_baseline_and_deltas.md`
+4. `11_scope_definition.md`
+5. `13_functional_requirements.md`
+6. `14_non_functional_requirements.md`
 
 ### 7.2 仕様把握順序
 
-1. 20_game_rules_spec.md
-2. 21_ui_screen_spec.md
-3. 24_piece_rotation_collision_spec.md
+1. `20_game_rules_spec.md`
+2. `23_scoring_level_spec.md`
+3. `22_input_operation_spec.md`
+4. `21_ui_screen_spec.md`
+5. `24_piece_rotation_collision_spec.md`
+6. `25_pause_gameover_resume_spec.md`
 
 ### 7.3 設計把握順序
 
-1. 32_state_machine_design.md
-2. 関連する内部設計文書
+1. `32_state_machine_design.md`
+2. `34_module_design.md`
+3. `31_domain_model.md`
+4. 図補助文書
 
 ### 7.4 品質確認順序
 
-1. 40_test_strategy.md
-2. 対応する各テストケース文書
-3. 16_traceability_matrix.md
+1. `40_test_strategy.md`
+2. `15_acceptance_criteria.md`
+3. 各テストケース文書
+4. `16_traceability_matrix.md`
 
 ---
 
-## 8. 文書間の関係
+## 8. 文書間の基本関係
 
-本プロジェクトの基本的な関係は以下の通りである。
-
-```
+```text
 Project Charter
     ↓
-Scope Definition
+Reference Baseline / Scope Definition
     ↓
 Functional / Non-Functional Requirements
     ↓
@@ -321,18 +214,18 @@ Internal Design
     ↓
 Test Strategy / Test Cases
     ↓
-Traceability Matrix / Review / Change Log
+Traceability Matrix / Review Log / Change Log
 ```
 
-より具体的には、以下の対応を意識する。
+より具体的には以下を意識する。
 
-- `11_scope_definition.md` は、何を対象とし何を対象外とするかを定める
-- `13_functional_requirements.md` は、機能面の要求を定義する
-- `14_non_functional_requirements.md` は、品質面の要求を定義する
-- `20_game_rules_spec.md` などの仕様文書は、それら要求を具体的な振る舞いに落とす
-- `32_state_machine_design.md` などの設計文書は、仕様を内部構造へ落とす
-- `40_test_strategy.md` は、要求と仕様をどう検証するかの方針を定める
-- `16_traceability_matrix.md` は、要求からテストまでのつながりを保証する
+- `11_scope_definition.md` は対象/非対象と基準仕様との差分境界を定める
+- `13_functional_requirements.md` は必要機能を定義する
+- `14_non_functional_requirements.md` は品質制約を定義する
+- `20`〜`25` 系仕様文書は外部挙動へ落とす
+- `32_state_machine_design.md` は実装可能な状態遷移へ落とす
+- `40_test_strategy.md` は要求と仕様からテスト導出方法を定める
+- `16_traceability_matrix.md` は要求からテストまでの縦断追跡を保証する
 
 ---
 
@@ -341,50 +234,41 @@ Traceability Matrix / Review / Change Log
 ### 9.1 基本原則
 
 - 実装より先に、関係する要求・仕様・設計文書を確認する
-- 実装により仕様が変わるのではなく、仕様変更を明文化したうえで実装を変える
-- 仕様変更時は、影響する文書を同時に更新する
-- 文書更新を伴わない仕様変更は、原則として未完了とみなす
+- 実装で仕様を決めない。先に文書を更新する
+- 仕様変更時は影響文書を同一変更で更新する
+- 文書更新を伴わない仕様変更は未完了とみなす
 
-### 9.2 更新対象の考え方
+### 9.2 変更時の最小確認セット
 
-たとえば、ピース回転仕様を変更した場合は、少なくとも以下を確認する。
+ピース回転仕様を変更した場合、最低でも以下を確認する。
 
-- 24_piece_rotation_collision_spec.md
-- 32_state_machine_design.md（必要に応じて）
-- 40_test_strategy.md
+- `24_piece_rotation_collision_spec.md`
+- `20_game_rules_spec.md`
+- `22_input_operation_spec.md`
+- `32_state_machine_design.md`
+- `40_test_strategy.md`
 - 関連テストケース文書
-- 16_traceability_matrix.md
-- 60_decision_log.md または ADR
+- `16_traceability_matrix.md`
+- `60_decision_log.md` または ADR
 
 ### 9.3 記録の残し方
 
 - 大きな設計判断は ADR に残す
-- 比較的小さな判断は 60_decision_log.md に残す
-- レビューでの指摘と対応は 62_review_log.md に残す
-- ユーザー影響のある変更は 61_change_log.md に残す
-
+- 文書方針や仕様境界の採否は `60_decision_log.md` に残す
+- レビュー指摘と対応は `62_review_log.md` に残す
+- ユーザー影響のある変更は `61_change_log.md` に残す
 
 ### 9.4 評価視点
-- Spec-Driven: コア10文書を正本として、不足仕様は暗黙にせず追記する
-- Acceptance-Driven: 各主要文書にレビュー可能な受入観点を持たせる
-- Diagram-Driven: 図は本文の補助ではなく、状態遷移と責務分解の要約として本文と同期させる
+
+- **Spec-Driven**: コア 10 文書を正本として、不足仕様を暗黙にしない
+- **Acceptance-Driven**: 各主要文書にレビュー可能な受入観点を持たせる
+- **Diagram-Driven**: 図を本文の要約として扱い、図と本文を同一変更で同期する
 
 ---
-## 10. 文書命名規則
 
-### 10.1 ファイル名規則
+## 10. 文書ヘッダ規則
 
-- 形式: `番号_英語名.md`
-- 例: `13_functional_requirements.md`
-
-### 10.2 文書タイトル規則
-
-- 見出しタイトルは日本語を基本とする
-- 必要に応じて英語副題を併記する
-
-### 10.3 文書ヘッダ推奨項目
-
-各文書の先頭には、原則として以下を記載する。
+各文書の先頭には原則として以下を記載する。
 
 - 文書ID
 - 文書名
@@ -392,53 +276,25 @@ Traceability Matrix / Review / Change Log
 - 対象プロジェクト
 - 目的
 - 関連文書
-- 更新履歴（必要に応じて）
+- 必要に応じて変更履歴
 
 ---
 
-## 11. 本プロジェクトにおけるDocDDの考え方
+## 11. DocDD の考え方
 
-本プロジェクトでは、DocDDを以下のように位置付ける。
+本プロジェクトにおける DocDD の基本思想は以下である。
 
-- 文書は成果物の付属物ではなく、成果物そのものの一部である
-- 要求・仕様・設計・テストは分離して管理する
+- 文書は実装の付属物ではなく成果物の一部である
+- 要求・仕様・設計・テストを分離して管理する
 - 文書間の関係を追跡可能にする
 - 変更理由を記録する
-- 実装だけではなく、判断の経緯も再利用可能な形で残す
-
-本プロジェクトの価値は、ゲーム完成そのものではなく、小規模題材でも実務に耐える文書構造を成立させられることにある。
+- 実装だけでなく判断経緯も再利用可能な形で残す
 
 ---
 
-## 12. 現時点の制作順序
-
-本書の作成時点では、以下の順で文書を整備する。
-
-1. 00_document_map.md
-2. 01_project_charter.md
-3. 11_scope_definition.md
-4. 13_functional_requirements.md
-5. 14_non_functional_requirements.md
-6. 20_game_rules_spec.md
-7. 21_ui_screen_spec.md
-8. 24_piece_rotation_collision_spec.md
-9. 32_state_machine_design.md
-10. 40_test_strategy.md
-
-必要に応じて、この後に周辺文書を拡張する。
-
----
-
-## 13. 備考
-
-- 本プロジェクトは公開可能なDocDD見本として整備する
-- 実案件の守秘情報、実業務データ、実社内仕様は含めない
-- ただし、文書の粒度、考え方、構造、追跡性は実務レベルを目指す
-
----
-
-## 14. 変更履歴
+## 12. 変更履歴
 
 | 日付 | 内容 |
 |---|---|
+| 2026-03-23 | コア 10 文書のレビュー観点、Game Boy 基準の補強点、参照順序を再整理 |
 | 2026-03-23 | 初版作成 |
