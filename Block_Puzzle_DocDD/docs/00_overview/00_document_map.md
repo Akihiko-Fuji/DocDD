@@ -108,6 +108,7 @@
 | `docs/00_overview/03_assumptions_and_constraints.md` | 前提条件、プラットフォーム、技術制約、運用制約を整理する |
 | `docs/00_overview/04_reference_baseline_and_deltas.md` | Game Boy 版基準として継承した要素と独自拡張・除外を整理する |
 | `docs/00_overview/05_document_maturity_matrix.md` | 文書成熟度と利用可否を明示する |
+| `docs/00_overview/06_traceability_axes_map.md` | 一般的な 7 軸と本プロジェクト文書群の対応関係を示す |
 
 ### 6.2 Requirements
 
