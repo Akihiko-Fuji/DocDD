@@ -11,8 +11,8 @@
 
 ## このリポジトリが扱うもの
 
-現在の主題は、`Tetris/` 配下にある
-**落下ブロックゲームを題材にした DocDD サンプル**です。
+現在の主題は、`Block_Puzzle_DocDD/` 配下にある
+**Falling Block Puzzle DocDD Sample（落下ブロックゲームを題材にした DocDD サンプル）**です。
 
 - 題材: Game Boy 版テトリスを参照元のひとつとした落下ブロックゲーム
 - 主軸: **A-TYPE**
@@ -42,7 +42,7 @@
 
 ## このサンプルの特徴
 
-`Tetris/` のサンプルでは、特に以下を重視しています。
+`Block_Puzzle_DocDD/` の Falling Block Puzzle DocDD Sample では、特に以下を重視しています。
 
 - **要件・仕様・設計・テストの役割分離**
 - **コア文書を先に固める構成**
@@ -51,7 +51,7 @@
 - **小規模題材でも曖昧にしない実務寄りの粒度**
 - **人間と AI の双方が読んで理解・評価しやすい文書構成**
 
-また、`Tetris/AGENT.md` では、このリポジトリにおける基本ルールとして
+また、`Block_Puzzle_DocDD/AGENT.md` では、このリポジトリにおける基本ルールとして
 **“No behavior change without document change.”**
 を明示しています。
 
@@ -83,17 +83,17 @@
 
 読む順番としては、まず以下を推奨します。
 
-1. `Tetris/readme.md`
-2. `Tetris/docs/00_overview/00_document_map.md`
-3. `Tetris/docs/00_overview/01_project_charter.md`
-4. `Tetris/docs/01_requirements/11_scope_definition.md`
-5. `Tetris/docs/01_requirements/13_functional_requirements.md`
-6. `Tetris/docs/01_requirements/14_non_functional_requirements.md`
-7. `Tetris/docs/02_external_spec/20_game_rules_spec.md`
-8. `Tetris/docs/02_external_spec/21_ui_screen_spec.md`
-9. `Tetris/docs/02_external_spec/24_piece_rotation_collision_spec.md`
-10. `Tetris/docs/03_internal_design/32_state_machine_design.md`
-11. `Tetris/docs/04_quality_assurance/40_test_strategy.md`
+1. `Block_Puzzle_DocDD/readme.md`
+2. `Block_Puzzle_DocDD/docs/00_overview/00_document_map.md`
+3. `Block_Puzzle_DocDD/docs/00_overview/01_project_charter.md`
+4. `Block_Puzzle_DocDD/docs/01_requirements/11_scope_definition.md`
+5. `Block_Puzzle_DocDD/docs/01_requirements/13_functional_requirements.md`
+6. `Block_Puzzle_DocDD/docs/01_requirements/14_non_functional_requirements.md`
+7. `Block_Puzzle_DocDD/docs/02_external_spec/20_game_rules_spec.md`
+8. `Block_Puzzle_DocDD/docs/02_external_spec/21_ui_screen_spec.md`
+9. `Block_Puzzle_DocDD/docs/02_external_spec/24_piece_rotation_collision_spec.md`
+10. `Block_Puzzle_DocDD/docs/03_internal_design/32_state_machine_design.md`
+11. `Block_Puzzle_DocDD/docs/04_quality_assurance/40_test_strategy.md`
 
 この順序で読むと、
 
@@ -103,9 +103,9 @@
 
 ---
 
-## `Tetris/` サンプルに含まれる中核文書
+## `Block_Puzzle_DocDD/` サンプルに含まれる中核文書
 
-現在の `Tetris/` サンプルでは、以下をコア文書として位置付けています。
+現在の `Block_Puzzle_DocDD/` Falling Block Puzzle DocDD Sample では、以下をコア文書として位置付けています。
 
 - `00_document_map.md`
 - `01_project_charter.md`
@@ -184,13 +184,13 @@
 - 実装より前に思考を整理するプロセス
 - AI を使っても文書主導を崩さないためのルール設計
 
-現時点の `Tetris/` は、**実装完了済みのゲーム配布物ではなく、文書体系を先に成立させる段階**として読むのが適切です。
+現時点の `Block_Puzzle_DocDD/` は、**実装完了済みのゲーム配布物ではなく、文書体系を先に成立させる段階**として読むのが適切です。
 
 ---
 
 ## 補足
 
-`Tetris/` はあくまで題材です。
+`Block_Puzzle_DocDD/` はあくまで題材です。
 本当に見てほしいのは、ゲームそのもの以上に、
 **「どのように文書体系を作ると、開発を説明可能な状態に保てるか」** という点です。
 
@@ -207,6 +207,6 @@
 
 詳細は以下を参照してください。
 
-- `Tetris/readme.md`
-- `Tetris/docs/00_overview/00_document_map.md`
-- `Tetris/docs/00_overview/04_reference_baseline_and_deltas.md`
+- `Block_Puzzle_DocDD/readme.md`
+- `Block_Puzzle_DocDD/docs/00_overview/00_document_map.md`
+- `Block_Puzzle_DocDD/docs/00_overview/04_reference_baseline_and_deltas.md`

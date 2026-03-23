@@ -1,4 +1,4 @@
-# Tetris DocDD Sample
+# Falling Block Puzzle DocDD Sample
 
 本ディレクトリは、**Document-Driven Development（DocDD）の解説用見本**として、テトリス系落下ブロックゲームを題材に文書体系を整備したサンプルです。
 
