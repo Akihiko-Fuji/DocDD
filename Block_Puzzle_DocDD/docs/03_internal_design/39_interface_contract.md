@@ -16,7 +16,16 @@
 - `34_module_design.md`: モジュール責務と公開契約の説明
 - 本書: 主要 API の**データ契約**を一覧で確認するための正本
 
-本書は実装言語の構文ではなく、DocDD 上の内部契約一覧として読む。
+本書は実装言語の構文ではなく、DocDD 上の内部契約一覧として読む。ここで用いる `function_name(arg) -> ResultType` 形式は**契約記法**であり、特定言語の実装例を推奨するものではない。Python / C# / Java / C++ / Rust / Kotlin では、それぞれの命名規約・型宣言・戻り値表現へ読み替えてよい。
+
+
+
+### 1.1 契約記法の読み替え規則
+- シグネチャ欄は**疑似コード記法**であり、実装言語の予約語・文法とは切り離して読む。
+- `snake_case` の識別子は文書内での参照名であり、実装時は `camelCase` や `PascalCase` へ変換してよい。
+- `InputSnapshot`, `TransitionResult` などの型名は、class / struct / record / enum / interface など各言語の適切なデータ表現へ写像してよい。
+- `->` は「戻り値契約を持つ」を意味し、単一戻り値、結果オブジェクト、`Result<T>`、out 引数、DTO など具体表現は実装言語側で選定してよい。
+- 前提条件・事後条件が本書の正本であり、メソッド分割数や継承・所有モデルは各実装言語で最適化してよい。
 
 ## 2. 主要インターフェース一覧
 
@@ -120,7 +129,7 @@
 - 引数:
   - `session`: `GameSession`
   - `ui_message`: 任意短文
-  - `next_visibility`: boolean
+  - `next_visibility`: 真偽値（bool / boolean / Boolean 相当）
 - 事後条件:
   - 640×576 基準座標の `ScreenViewModel` を返すこと
   - ルール計算を新規実行しないこと
