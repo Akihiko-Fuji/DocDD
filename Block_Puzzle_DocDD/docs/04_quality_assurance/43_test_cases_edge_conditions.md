@@ -7,28 +7,35 @@
   - `22_input_operation_spec.md`
   - `24_piece_rotation_collision_spec.md`
   - `32_state_machine_design.md`
+  - `46_test_fixtures_catalog.md`
 
 ## 1. 目的
 壁際・床際・同時押下・pause 競合など、実装差が出やすい境界条件を検証する。
 
-## 2. カバレッジ方針
+## 2. テスト運用ルール
+- 回転失敗系は具体盤面 fixture を必須とする
+- 同時押下や pause 競合はフレーム単位の入力記録で再現できることを前提にする
+- 実施結果欄を埋めるまでは未完了ケースとして扱う
+
+## 3. カバレッジ方針
 - 回転失敗系を壁 / 床 / 積み上がりで分離する
 - 状態依存入力無効と START 優先を確認する
 - 非採用機能も「存在しないこと」を検証する
 
-| TC-ID | 観点 | 前提条件 | 入力 / 操作 | 実施手順 | 期待状態遷移 | pass 条件 | 関連 FR / NFR / EXT / Design |
-|---|---|---|---|---|---|---|---|
-| TC-EC-001 | 左壁際回転失敗 | 左壁際で回転後にはみ出す配置 | A または B | 1. 左壁際に対象ピースを配置する 2. 回転入力する 3. 位置・向きを確認する | `PL-ACTIVE` 維持 | 回転失敗となり位置・向きが維持される | FR-107 / NFR-102 / DOC-SPC-024 / DOC-DSN-034 |
-| TC-EC-002 | 右壁際回転失敗 | 右壁際で回転後にはみ出す配置 | A または B | 1. 右壁際に対象ピースを配置する 2. 回転入力する 3. 結果を確認する | `PL-ACTIVE` 維持 | 回転失敗となり位置・向きが維持される | FR-107 / NFR-102 / DOC-SPC-024 / DOC-DSN-034 |
-| TC-EC-003 | 床際回転失敗 | 床際で回転後に下端へはみ出す配置 | A または B | 1. 床際へ対象ピースを落とす 2. 回転入力する 3. 結果を確認する | `PL-ACTIVE` 維持 | floor kick せず回転失敗となる | FR-107 / NFR-102 / DOC-SPC-024 / DOC-DSN-034 |
-| TC-EC-004 | 固定済みブロック近傍回転失敗 | 回転先が固定済みブロックと重なる配置 | A または B | 1. 積み上がり近傍盤面を用意する 2. 回転入力する 3. 結果を確認する | `PL-ACTIVE` 維持 | 固定済みブロックとの重なり回避のため回転失敗する | FR-107 / NFR-102 / DOC-SPC-024 / DOC-DSN-034 |
-| TC-EC-005 | 一時停止中に左右 / 回転 / 下が無効 | 一時停止中 | Left / Right / Down / A / B | 1. START で一時停止する 2. 各プレイ入力を行う 3. 盤面と状態を確認する | `ST-PAUSE` 維持 | 盤面進行・位置・向き・スコアが変化しない | FR-108, FR-402 / NFR-003 / DOC-SPC-022, DOC-SPC-025 / DOC-DSN-032, DOC-DSN-034 |
-| TC-EC-006 | ゲームオーバー後に通常入力が無効 | ゲームオーバー画面表示中 | Left / Right / Down / SELECT | 1. ゲームオーバーにする 2. 通常プレイ入力を行う 3. 状態を確認する | `ST-GAMEOVER` 維持 | 再試行 / タイトル以外の入力では状態が変化しない | FR-108, FR-404 / NFR-003 / DOC-SPC-022, DOC-SPC-025 / DOC-DSN-032, DOC-DSN-034 |
-| TC-EC-007 | T-Spin 対角 3 箇所未満で不成立 | T ピース、最終成立操作は回転、対角占有 2 箇所以下 | A または B | 1. 不成立用盤面を作る 2. 回転成功後に固定する 3. 判定結果を確認する | `PL-ACTIVE -> PL-LOCK-CHECK -> PL-SCORE` | T-Spin と判定されず、専用得点が適用されない | FR-210 / NFR-101, NFR-102 / DOC-SPC-024, DOC-SPC-023 / DOC-DSN-034 |
-| TC-EC-008 | Hold / Hard drop 非採用確認 | タイトル〜プレイ可能状態 | 入力一覧確認およびプレイ操作 | 1. 画面案内を確認する 2. プレイ中に Hold / Hard drop に相当する操作を試す 3. UI と挙動を確認する | 各状態維持 | Hold 枠、Hard drop 操作、関連表示が存在しない | FR-212 / NFR-206 / DOC-SPC-020, DOC-SPC-021, DOC-SPC-022 / DOC-DSN-034 |
-| TC-EC-009 | Left と Right 同時押下 | プレイ中 | Left + Right 同時入力 | 1. プレイ中に左右同時入力する 2. ピース位置を確認する | `PL-ACTIVE` 維持 | 左右移動なしとして扱われる | FR-103 / NFR-002 / DOC-SPC-022 / DOC-DSN-034 |
-| TC-EC-010 | START 押下優先 | プレイ中、他入力と同時押下可能 | START + Left / Right / A / Down | 1. プレイ中に START と他入力を同フレームで発生させる 2. 状態と盤面を確認する | `ST-PLAY -> ST-PAUSE` | 一時停止が優先され、ピース操作は反映されない | FR-108, FR-401 / NFR-003 / DOC-SPC-022 / DOC-DSN-032, DOC-DSN-034 |
+| TC-ID | 観点 | Fixture ID | 実行方式 | 区分 | 優先度 | 前提条件 | 入力 / 操作 | 実施手順 | 期待状態遷移 | pass 条件 | 実施結果欄 | 関連 FR / NFR / EXT / Design |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| TC-EC-001 | 左壁際回転失敗 | FX-ROT-401 | automated | regression | high | 左壁際で回転後にはみ出す配置 | A または B | 1. `FX-ROT-401` をロードする 2. 回転入力する 3. 位置・向きを確認する | `PL-ACTIVE` 維持 | 回転失敗となり位置・向きが維持される | 未実施/Pass/Fail を記録 | FR-107 / NFR-102 / DOC-SPC-024 / DOC-DSN-034 |
+| TC-EC-002 | 右壁際回転失敗 | FX-ROT-402 | automated | regression | high | 右壁際で回転後にはみ出す配置 | A または B | 1. `FX-ROT-402` をロードする 2. 回転入力する 3. 結果を確認する | `PL-ACTIVE` 維持 | 回転失敗となり位置・向きが維持される | 未実施/Pass/Fail を記録 | FR-107 / NFR-102 / DOC-SPC-024 / DOC-DSN-034 |
+| TC-EC-003 | 床際回転失敗 | FX-ROT-403 | automated | regression | high | 床際で回転後に下端へはみ出す配置 | A または B | 1. `FX-ROT-403` をロードする 2. 回転入力する 3. 結果を確認する | `PL-ACTIVE` 維持 | floor kick せず回転失敗となる | 未実施/Pass/Fail を記録 | FR-107 / NFR-102 / DOC-SPC-024 / DOC-DSN-034 |
+| TC-EC-004 | 固定済みブロック近傍回転失敗 | FX-ROT-404 | automated | regression | high | 回転先が固定済みブロックと重なる配置 | A または B | 1. `FX-ROT-404` をロードする 2. 回転入力する 3. 結果を確認する | `PL-ACTIVE` 維持 | 固定済みブロックとの重なり回避のため回転失敗する | 未実施/Pass/Fail を記録 | FR-107 / NFR-102 / DOC-SPC-024 / DOC-DSN-034 |
+| TC-EC-005 | 一時停止中に左右 / 回転 / 下が無効 | FX-UI-101 | manual/automated | regression | high | 一時停止中 | Left / Right / Down / A / B | 1. START で一時停止する 2. 各プレイ入力を行う 3. 盤面と状態を確認する | `ST-PAUSE` 維持 | 盤面進行・位置・向き・スコアが変化しない | 未実施/Pass/Fail を記録 | FR-108, FR-402 / NFR-003 / DOC-SPC-022, DOC-SPC-025 / DOC-DSN-032, DOC-DSN-034 |
+| TC-EC-006 | ゲームオーバー後に通常入力が無効 | FX-BRD-301 | manual/automated | regression | medium | ゲームオーバー画面表示中 | Left / Right / Down / SELECT | 1. ゲームオーバーにする 2. 通常プレイ入力を行う 3. 状態を確認する | `ST-GAMEOVER` 維持 | 再試行 / タイトル以外の入力では状態が変化しない | 未実施/Pass/Fail を記録 | FR-108, FR-404 / NFR-003 / DOC-SPC-022, DOC-SPC-025 / DOC-DSN-032, DOC-DSN-034 |
+| TC-EC-007 | T-Spin 対角 3 箇所未満で不成立 | FX-TSP-203 | automated | regression | medium | T ピース、最終成立操作は回転、対角占有 2 箇所以下 | A または B | 1. `FX-TSP-203` をロードする 2. 回転成功後に固定する 3. 判定結果を確認する | `PL-ACTIVE -> PL-LOCK-CHECK -> PL-SCORE` | T-Spin と判定されず、専用得点が適用されない | 未実施/Pass/Fail を記録 | FR-210 / NFR-101, NFR-102 / DOC-SPC-024, DOC-SPC-023 / DOC-DSN-034 |
+| TC-EC-008 | Hold / Hard drop 非採用確認 | FX-UI-104 | manual | regression/usability | medium | タイトル〜プレイ可能状態 | 入力一覧確認およびプレイ操作 | 1. 画面案内を確認する 2. プレイ中に Hold / Hard drop に相当する操作を試す 3. UI と挙動を確認する | 各状態維持 | Hold 枠、Hard drop 操作、関連表示が存在しない | 未実施/Pass/Fail を記録 | FR-212 / NFR-206 / DOC-SPC-020, DOC-SPC-021, DOC-SPC-022 / DOC-DSN-034 |
+| TC-EC-009 | Left と Right 同時押下 | FX-INP-501 | automated | regression | medium | プレイ中 | Left + Right 同時入力 | 1. `FX-INP-501` の入力列を再生する 2. ピース位置を確認する | `PL-ACTIVE` 維持 | 左右移動なしとして扱われる | 未実施/Pass/Fail を記録 | FR-103 / NFR-002 / DOC-SPC-022 / DOC-DSN-034 |
+| TC-EC-010 | START 押下優先 | FX-INP-502 | automated | smoke/regression | critical | プレイ中、他入力と同時押下可能 | START + Left / Right / A / Down | 1. `FX-INP-502` の入力列を再生する 2. 状態と盤面を確認する | `ST-PLAY -> ST-PAUSE` | 一時停止が優先され、ピース操作は反映されない | 未実施/Pass/Fail を記録 | FR-108, FR-401 / NFR-003 / DOC-SPC-022 / DOC-DSN-032, DOC-DSN-034 |
 
-## 3. 受入観点
+## 4. 受入観点
 - 失敗系の結果が「位置・向き維持」として一貫していること
 - START 優先と同時押下相殺が境界ケースで検証できること
+- フィクスチャと入力列を用いて再現性ある試験仕様として使えること

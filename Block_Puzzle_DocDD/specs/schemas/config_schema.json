@@ -1,13 +1,28 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://example.local/block-puzzle/config.schema.json",
-  "title": "Block Puzzle Config",
+  "title": "Block Puzzle Config (normalized from config.ini)",
   "type": "object",
   "additionalProperties": false,
   "properties": {
     "version": { "type": "integer", "minimum": 1 },
     "start_level": { "type": "integer", "minimum": 0, "maximum": 9 },
-    "keymap": {
+    "input_interface": { "type": "string", "enum": ["keyboard", "gamepad"] },
+    "keyboard_bindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "left": { "type": "string" },
+        "right": { "type": "string" },
+        "down": { "type": "string" },
+        "a": { "type": "string" },
+        "b": { "type": "string" },
+        "start": { "type": "string" },
+        "select": { "type": "string" }
+      },
+      "required": ["left", "right", "down", "a", "b", "start", "select"]
+    },
+    "gamepad_bindings": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
@@ -23,5 +38,5 @@
     },
     "randomizer_seed": { "type": "integer", "minimum": 0 }
   },
-  "required": ["version", "start_level", "keymap"]
+  "required": ["version", "start_level", "input_interface", "keyboard_bindings", "gamepad_bindings"]
 }
