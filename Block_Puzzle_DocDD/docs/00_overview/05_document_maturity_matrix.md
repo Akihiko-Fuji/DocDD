@@ -1,7 +1,7 @@
 # 文書成熟度マトリクス / Document Maturity Matrix
 
 - 文書ID: DOC-OVW-005
-- 最終更新日: 2026-03-23
+- 最終更新日: 2026-03-24
 - 目的: 各文書の成熟度と利用目的を明示し、未完成と予約仕様を区別できるようにする
 
 ## 1. 本書の位置付け
@@ -82,7 +82,7 @@
 | `20_game_rules_spec.md` | 外部ルール仕様 | Stable | Yes | B-TYPE 詳細化時の分離 |
 | `21_ui_screen_spec.md` | 画面仕様 | Stable | Yes | 保存 UI 採用時の画面追加 |
 | `24_piece_rotation_collision_spec.md` | 回転・衝突 | Stable | Yes | 実装検証結果反映 |
-| `26_save_replay_config_spec.md` | 保存/再現予約仕様 | Draft | Conditional | スキーマ正本方針、保存タイミング、version 戦略 |
+| `26_save_replay_config_spec.md` | 保存/再現仕様 | Stable | Yes | 永続化導線と UI 通知文言の実運用反映 |
 | `docs/03_internal_design/27_runtime_flowchart_mermaid.md` | 処理順図 | Reference | Conditional | 実装名との同期維持 |
 | `30_architecture_design.md` | 上位アーキテクチャ境界 | Stable | Yes | 実装との差分レビュー運用 |
 | `31_domain_model.md` | ドメイン概念と集約境界 | Stable | Yes | 将来拡張概念の整理 |
@@ -92,13 +92,13 @@
 | `35_rendering_design.md` | 描画設計 | Stable | Yes | 実 UI 実装との差分管理 |
 | `36_input_timing_design.md` | 入力・時間軸設計 | Stable | Yes | 自動試験との接続強化 |
 | `37_error_handling_policy.md` | エラー処理設計 | Stable | Yes | 診断ログ運用規約 |
-| `39_interface_contract.md` | モジュール間契約一覧 | Draft | Yes | 実装署名との同期維持 |
+| `39_interface_contract.md` | モジュール間契約一覧 | Stable | Yes | 実装署名との差分レビュー運用 |
 | `40_test_strategy.md` | QA 方針 | Stable | Yes | automation 境界の詳細化 |
-| `41_test_cases_game_rules.md` | ルール試験仕様 | Draft | Yes | 実施結果の蓄積 |
-| `42_test_cases_ui_input.md` | UI/入力試験仕様 | Draft | Yes | usability 記録欄の蓄積 |
-| `43_test_cases_edge_conditions.md` | 境界試験仕様 | Draft | Yes | replay ベース手順の具体化 |
+| `41_test_cases_game_rules.md` | ルール試験仕様 | Stable | Yes | 実施結果の蓄積と自動化紐付け |
+| `42_test_cases_ui_input.md` | UI/入力試験仕様 | Stable | Yes | usability 記録欄の蓄積 |
+| `43_test_cases_edge_conditions.md` | 境界試験仕様 | Stable | Yes | replay ベース実行ログの蓄積 |
 | `45_definition_of_done.md` | 完了条件 | Stable | Yes | フェーズ別 DoD 派生 |
-| `46_test_fixtures_catalog.md` | fixture 正本 | Draft | Yes | 外部ファイル化規約 |
+| `46_test_fixtures_catalog.md` | fixture 正本 | Stable | Yes | 外部ファイル化規約と fixture 配置規約 |
 | `docs/05_project_management/56_document_update_checklist.md` | 実行用 checklist | Stable | Yes | 自動化導線 |
 | `54_issue_management.md` | 課題運用 | Stable | Yes | 運用実績例の追記 |
 | `55_risk_register.md` | リスク運用 | Stable | Yes | 指標化・レビュー履歴 |
@@ -107,7 +107,8 @@
 
 ## 5. 運用ルール
 
-- `Reserved`, `Draft`, `Skeleton` の文書は、単独で仕様確定に使わず上位正本文書と組み合わせて参照する
+- `Reserved`, `Skeleton` の文書は、単独で仕様確定に使わず上位正本文書と組み合わせて参照する
+- `Draft` の文書は、close 条件や DoD 判定で補助文書との併読前提を維持する
 - 成熟度を変更したときは `61_change_log.md` または `62_review_log.md` に記録する
 - `Skeleton` が残る場合は DoD の未達理由として明示する
 
@@ -124,5 +125,6 @@
 
 ## 7. 変更履歴
 
+- 2026-03-24: `26`, `39`, `41`〜`43`, `46` を Stable へ格上げし、現行文書群で実装判断可能な範囲を反映
 - 2026-03-23: 成熟度定義の判断基準、更新責任、格上げ・格下げルールを追加
 - 2026-03-23: `05_document_maturity_matrix.md` として overview 配下へ再配置し、成熟度マトリクスを文書入口側へ移動
