@@ -12,6 +12,7 @@
   - `docs/02_external_spec/22_input_operation_spec.md`
   - `docs/02_external_spec/23_scoring_level_spec.md`
   - `docs/02_external_spec/25_pause_gameover_resume_spec.md`
+  - `docs/02_external_spec/27_runtime_flowchart_mermaid.md`
   - `docs/03_internal_design/32_state_machine_design.md`
 
 ---
@@ -59,6 +60,10 @@
 - SCR-005 → SCR-001: タイトル復帰
 
 ---
+
+
+## 4.1 画面遷移フローチャート（Mermaid）
+画面遷移と主要判断順序を図として確認したい場合は、補助文書 `27_runtime_flowchart_mermaid.md` を参照すること。
 
 ## 5. SCR-001 タイトル画面
 

@@ -95,7 +95,8 @@ project-root/
 │  │  ├─ 23_scoring_level_spec.md
 │  │  ├─ 24_piece_rotation_collision_spec.md
 │  │  ├─ 25_pause_gameover_resume_spec.md
-│  │  └─ 26_save_replay_config_spec.md
+│  │  ├─ 26_save_replay_config_spec.md
+│  │  └─ 27_runtime_flowchart_mermaid.md
 │  │
 │  ├─ 03_internal_design/
 │  │  ├─ 30_architecture_design.md
@@ -105,7 +106,8 @@ project-root/
 │  │  ├─ 34_module_design.md
 │  │  ├─ 35_rendering_design.md
 │  │  ├─ 36_input_timing_design.md
-│  │  └─ 37_error_handling_policy.md
+│  │  ├─ 37_error_handling_policy.md
+│  │  └─ 38_runtime_state_transition_mermaid.md
 │  │
 │  ├─ 04_quality_assurance/
 │  │  ├─ 40_test_strategy.md
@@ -202,6 +204,7 @@ project-root/
 | docs/02_external_spec/24_piece_rotation_collision_spec.md | ピース回転と衝突判定の外部仕様を定義する。壁際、床際、他ブロック接触時の扱いを明確化する |
 | docs/02_external_spec/25_pause_gameover_resume_spec.md | ポーズ、再開、ゲームオーバー、リトライの仕様を定義する |
 | docs/02_external_spec/26_save_replay_config_spec.md | 設定保存、リプレイ保存、ロード対象を定義する。永続化対象の外部仕様を扱う |
+| docs/02_external_spec/27_runtime_flowchart_mermaid.md | 画面遷移とプレイフレーム処理順を Mermaid フローチャートで補助的に可視化する |
 
 ### 6.4 Internal Design
 
@@ -215,6 +218,7 @@ project-root/
 | docs/03_internal_design/35_rendering_design.md | 描画方式、再描画タイミング、表示責務を定義する |
 | docs/03_internal_design/36_input_timing_design.md | 入力受付タイミング、押下継続、リピート挙動を定義する |
 | docs/03_internal_design/37_error_handling_policy.md | 異常系の扱い方針を定義する。不正入力、壊れた設定、保存失敗時の方針を扱う |
+| docs/03_internal_design/38_runtime_state_transition_mermaid.md | 上位状態とプレイ中サブ状態を Mermaid 状態遷移図で補助的に可視化する |
 
 ### 6.5 Quality Assurance
 
