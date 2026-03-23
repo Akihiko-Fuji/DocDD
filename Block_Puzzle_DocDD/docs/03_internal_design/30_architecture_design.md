@@ -120,7 +120,7 @@ raw input / replay frame
 ### 6.5 描画用 view model の生成地点
 
 - `renderer.build_view_model(session)` が唯一の生成地点とする
-- `ScreenViewModel` は 640×480 基準座標系上の矩形、ラベル、数値、オーバーレイ可否を持つ
+- `ScreenViewModel` は 640×576 基準座標系上の矩形、ラベル、数値、オーバーレイ可否を持つ
 - UI 実装は `ScreenViewModel` を画面 API へ投影するだけに留める
 
 ## 7. フレーム制御と ADR-0001 との関係
