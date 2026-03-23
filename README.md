@@ -193,6 +193,33 @@ README で述べる「実装未着手」や「文書整備フェーズ」は、
 
 ---
 
+## 7軸トレーサビリティ対応表
+
+## 目的
+本書は、一般的なV字モデル／トレーサビリティ説明で用いられる7軸と、
+本プロジェクトの文書群との対応関係を示す補助文書である。
+
+## 対応表
+
+| 7軸 | 本プロジェクトでの対応文書 |
+|---|---|
+| 顧客要件（Customer Requirements） | `Block_Puzzle_DocDD/docs/01_requirements/10_product_vision.md`, `Block_Puzzle_DocDD/docs/01_requirements/11_scope_definition.md`, `Block_Puzzle_DocDD/docs/01_requirements/12_use_cases.md` |
+| システム要件（System Requirements） | `Block_Puzzle_DocDD/docs/01_requirements/13_functional_requirements.md`, `Block_Puzzle_DocDD/docs/01_requirements/14_non_functional_requirements.md`, `Block_Puzzle_DocDD/docs/01_requirements/15_acceptance_criteria.md` |
+| アーキテクチャ設計（Architectural Design） | `Block_Puzzle_DocDD/docs/03_internal_design/30_architecture_design.md`, `Block_Puzzle_DocDD/docs/03_internal_design/31_domain_model.md` |
+| 詳細設計（Detailed Design） | `Block_Puzzle_DocDD/docs/03_internal_design/32_state_machine_design.md` ～ `Block_Puzzle_DocDD/docs/03_internal_design/39_interface_contract.md` |
+| ソースコード（Implementation） | `Block_Puzzle_DocDD/src/` |
+| 単体/結合テスト（Unit/Integration Test） | `Block_Puzzle_DocDD/docs/04_quality_assurance/40_test_strategy.md`, `Block_Puzzle_DocDD/docs/04_quality_assurance/41_test_cases_game_rules.md`, `Block_Puzzle_DocDD/docs/04_quality_assurance/42_test_cases_ui_input.md`, `Block_Puzzle_DocDD/docs/04_quality_assurance/43_test_cases_edge_conditions.md` |
+| システムテスト（System Test） | `Block_Puzzle_DocDD/docs/01_requirements/15_acceptance_criteria.md`, `Block_Puzzle_DocDD/docs/01_requirements/16_traceability_matrix.md`, `Block_Puzzle_DocDD/docs/04_quality_assurance/44_performance_test_plan.md` |
+
+## 補足
+- 本プロジェクトでは、外部仕様（`Block_Puzzle_DocDD/docs/02_external_spec/20`～`26`）を
+  システム要件の具体化文書として扱う。
+- 本プロジェクトでは、詳細設計を単一文書ではなく、
+  状態・データ・モジュール・描画・入力・異常系・内部契約へ分割して管理する。
+- `Block_Puzzle_DocDD/docs/01_requirements/16_traceability_matrix.md` は、上記各軸の縦断追跡を支える管理文書である。
+
+---
+
 ## 補足
 
 `Block_Puzzle_DocDD/` はあくまで題材です。
