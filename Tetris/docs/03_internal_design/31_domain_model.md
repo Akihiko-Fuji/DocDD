@@ -19,3 +19,9 @@
 - GameSession は Board, CurrentPiece, NextQueue, ScoreState を持つ
 - CurrentPiece は PieceKind, Position, Rotation を持つ
 - TSpinResult は CurrentPiece の固定後に ScoreState 更新へ渡す
+
+## DocDD 追跡で特に重要な概念
+- `GameSession`: 状態遷移、スコア、盤面を束ねる集約
+- `InputSnapshot`: UI / 入力仕様から内部契約へ接続する橋渡し概念
+- `TSpinResult`: 外部仕様の T-Spin 条件を得点処理へ接続する概念
+- `ScoreState`: A-TYPE の LINES / LEVEL / SCORE を一体で保持する概念

@@ -76,7 +76,8 @@ project-root/
 │  │  ├─ 00_document_map.md
 │  │  ├─ 01_project_charter.md
 │  │  ├─ 02_glossary.md
-│  │  └─ 03_assumptions_and_constraints.md
+│  │  ├─ 03_assumptions_and_constraints.md
+│  │  └─ 04_reference_baseline_and_deltas.md
 │  │
 │  ├─ 01_requirements/
 │  │  ├─ 10_product_vision.md
@@ -126,7 +127,8 @@ project-root/
 │     ├─ 60_decision_log.md
 │     ├─ 61_change_log.md
 │     ├─ 62_review_log.md
-│     └─ 63_meeting_notes.md
+│     ├─ 63_meeting_notes.md
+│     └─ 64_change_case_tspin_adoption.md
 │
 ├─ adr/
 │  ├─ ADR-0001-game-loop-model.md
@@ -175,6 +177,7 @@ project-root/
 | docs/00_overview/01_project_charter.md | プロジェクトの目的、背景、成果物、対象読者を定義する。「なぜこのプロジェクトを行うのか」を示す |
 | docs/00_overview/02_glossary.md | 用語集。ピース、盤面、スポーン、ロック、ホールド等の用語を定義する。文書間の語義ブレを防ぐ |
 | docs/00_overview/03_assumptions_and_constraints.md | 前提条件と制約を整理する。対応プラットフォーム、対象外範囲、技術制約などを記載する |
+| docs/00_overview/04_reference_baseline_and_deltas.md | Game Boy 版基準として継承した要素と、本見本独自の拡張・除外を整理する。参照元との差分を 1 枚で確認できる |
 
 ### 6.2 Requirements
 
@@ -243,6 +246,7 @@ project-root/
 | docs/06_records/61_change_log.md | バージョン単位の変更履歴を記録する |
 | docs/06_records/62_review_log.md | レビュー指摘、判断、対応結果を記録する |
 | docs/06_records/63_meeting_notes.md | 打合せメモや検討記録を残す |
+| docs/06_records/64_change_case_tspin_adoption.md | T-Spin 採用を題材に、変更要求が各文書へ波及する様子を示す見本ケースを記録する |
 
 ### 6.8 ADR
 
