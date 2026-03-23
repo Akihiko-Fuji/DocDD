@@ -2,6 +2,19 @@
 
 - 文書ID: DOC-QA-043
 - 最終更新日: 2026-03-23
+- 関連文書:
+  - `40_test_strategy.md`
+  - `22_input_operation_spec.md`
+  - `24_piece_rotation_collision_spec.md`
+  - `32_state_machine_design.md`
+
+## 1. 目的
+壁際・床際・同時押下・pause 競合など、実装差が出やすい境界条件を検証する。
+
+## 2. カバレッジ方針
+- 回転失敗系を壁 / 床 / 積み上がりで分離する
+- 状態依存入力無効と START 優先を確認する
+- 非採用機能も「存在しないこと」を検証する
 
 | TC-ID | 観点 | 前提条件 | 入力 / 操作 | 実施手順 | 期待状態遷移 | pass 条件 | 関連 FR / NFR / EXT / Design |
 |---|---|---|---|---|---|---|---|
@@ -15,3 +28,7 @@
 | TC-EC-008 | Hold / Hard drop 非採用確認 | タイトル〜プレイ可能状態 | 入力一覧確認およびプレイ操作 | 1. 画面案内を確認する 2. プレイ中に Hold / Hard drop に相当する操作を試す 3. UI と挙動を確認する | 各状態維持 | Hold 枠、Hard drop 操作、関連表示が存在しない | FR-212 / NFR-206 / DOC-SPC-020, DOC-SPC-021, DOC-SPC-022 / DOC-DSN-034 |
 | TC-EC-009 | Left と Right 同時押下 | プレイ中 | Left + Right 同時入力 | 1. プレイ中に左右同時入力する 2. ピース位置を確認する | `PL-ACTIVE` 維持 | 左右移動なしとして扱われる | FR-103 / NFR-002 / DOC-SPC-022 / DOC-DSN-034 |
 | TC-EC-010 | START 押下優先 | プレイ中、他入力と同時押下可能 | START + Left / Right / A / Down | 1. プレイ中に START と他入力を同フレームで発生させる 2. 状態と盤面を確認する | `ST-PLAY -> ST-PAUSE` | 一時停止が優先され、ピース操作は反映されない | FR-108, FR-401 / NFR-003 / DOC-SPC-022 / DOC-DSN-032, DOC-DSN-034 |
+
+## 3. 受入観点
+- 失敗系の結果が「位置・向き維持」として一貫していること
+- START 優先と同時押下相殺が境界ケースで検証できること

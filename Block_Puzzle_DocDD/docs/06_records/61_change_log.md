@@ -4,6 +4,11 @@
 - 最終更新日: 2026-03-23
 
 ## 2026-03-23
+- 薄かった architecture / rendering / error handling / management / DoD / diagram 文書を補強
+- 空だった ADR / schema / sample を最小構造で作成
+- 入力仕様の矛盾（開始設定、START 表示、優先順）を解消
+- Game Boy 基準の randomizer / spawn / replay 予約仕様を追加
+- Spec-Driven / Acceptance-Driven / Diagram-Driven 観点を文書へ反映
 - A-TYPE 主軸 / B-TYPE 参考の境界を再整理
 - T-Spin を採用へ変更
 - 入力、得点、ポーズ周辺仕様を新規作成
