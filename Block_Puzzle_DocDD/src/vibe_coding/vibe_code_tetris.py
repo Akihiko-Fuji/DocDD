@@ -1,4 +1,5 @@
 # 最小の説明要件で構築したバイブコーディングによる60行のコード。 ←→:移動 ↑:回転 ↓:1段落下 r:リスタート
+# DocDD に基づかない実装で SHAPES 定義と文書座標系のズレが発生し得る教材として保持する。
 import tkinter as tk
 import random
 from pathlib import Path

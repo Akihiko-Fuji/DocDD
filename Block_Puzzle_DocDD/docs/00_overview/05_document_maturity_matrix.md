@@ -81,6 +81,9 @@
 | `14_non_functional_requirements.md` | 非機能要求 | Stable | Yes | replay 永続化時の品質条件 |
 | `20_game_rules_spec.md` | 外部ルール仕様 | Stable | Yes | B-TYPE 詳細化時の分離 |
 | `21_ui_screen_spec.md` | 画面仕様 | Stable | Yes | 保存 UI 採用時の画面追加 |
+| `23a_timing_constants_spec.md` | 時間定数補完仕様 | Stable | Yes | 実機検証値との差分レビュー記録 |
+| `23b_display_limits_spec.md` | 表示上限補完仕様 | Stable | Yes | renderer 実装値との同期レビュー |
+| `24a_piece_shape_spawn_spec.md` | ピース形状・出現座標補完仕様 | Stable | Yes | SHAPES 実装との整合検証ログ反映 |
 | `24_piece_rotation_collision_spec.md` | 回転・衝突 | Stable | Yes | 実装検証結果反映 |
 | `26_save_replay_config_spec.md` | 保存/再現仕様 | Stable | Yes | 永続化導線と UI 通知文言の実運用反映 |
 | `docs/03_internal_design/27_runtime_flowchart_mermaid.md` | 処理順図 | Reference | Conditional | 実装名との同期維持 |
@@ -125,6 +128,7 @@
 
 ## 7. 変更履歴
 
+- 2026-03-24: 補完仕様 `23a` / `23b` / `24a` を成熟度マトリクスへ追加し、位置づけ（Stable）を明示
 - 2026-03-24: `26`, `39`, `41`〜`43`, `46` を Stable へ格上げし、現行文書群で実装判断可能な範囲を反映
 - 2026-03-23: 成熟度定義の判断基準、更新責任、格上げ・格下げルールを追加
 - 2026-03-23: `05_document_maturity_matrix.md` として overview 配下へ再配置し、成熟度マトリクスを文書入口側へ移動
