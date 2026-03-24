@@ -76,6 +76,7 @@
 | 文書 | 目的 | 成熟度 | 実装判断に使ってよいか | 次に厚くすべき項目 |
 |---|---|---|---|---|
 | `00_document_map.md` | 入口、役割整理 | Stable | Yes | 変更時に追加文書反映 |
+| `06_traceability_axes_map.md` | トレーサビリティ軸の対応整理 | Reference | Conditional | 軸ごとの代表リンク更新 |
 | `11_scope_definition.md` | 対象/非対象範囲 | Stable | Yes | B-TYPE 対象化条件 |
 | `13_functional_requirements.md` | 機能要求 | Stable | Yes | 将来拡張 FR の段階化 |
 | `14_non_functional_requirements.md` | 非機能要求 | Stable | Yes | replay 永続化時の品質条件 |
@@ -128,6 +129,7 @@
 
 ## 7. 変更履歴
 
+- 2026-03-24: `06_traceability_axes_map.md` を主要文書マトリクスへ追加し、overview 群の参照整合を補強
 - 2026-03-24: 補完仕様 `23a` / `23b` / `24a` を成熟度マトリクスへ追加し、位置づけ（Stable）を明示
 - 2026-03-24: `26`, `39`, `41`〜`43`, `46` を Stable へ格上げし、現行文書群で実装判断可能な範囲を反映
 - 2026-03-23: 成熟度定義の判断基準、更新責任、格上げ・格下げルールを追加
