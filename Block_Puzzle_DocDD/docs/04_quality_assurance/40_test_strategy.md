@@ -14,7 +14,10 @@
   - `docs/02_external_spec/21_ui_screen_spec.md`
   - `docs/02_external_spec/22_input_operation_spec.md`
   - `docs/02_external_spec/23_scoring_level_spec.md`
+  - `docs/02_external_spec/23a_timing_constants_spec.md`
+  - `docs/02_external_spec/23b_display_limits_spec.md`
   - `docs/02_external_spec/24_piece_rotation_collision_spec.md`
+  - `docs/02_external_spec/24a_piece_shape_spawn_spec.md`
   - `docs/02_external_spec/25_pause_gameover_resume_spec.md`
   - `docs/03_internal_design/32_state_machine_design.md`
   - `docs/03_internal_design/34_module_design.md`
@@ -47,7 +50,7 @@
 
 ### 3.1 Spec-Driven
 
-- 外部仕様の正本を `20`〜`25` 系文書に置き、TC はその拘束条件を検証する
+- 外部仕様の正本を `20`〜`26` 系文書および補完仕様（`23a` / `23b` / `24a`）に置き、TC はその拘束条件を検証する
 - 暗黙仕様を認めず、Game Boy 基準で補完した事項も文書へ明記する
 - SELECT による NEXT 表示切替、速度表、B-TYPE/HIGH のような見落としやすい項目を重点確認する
 

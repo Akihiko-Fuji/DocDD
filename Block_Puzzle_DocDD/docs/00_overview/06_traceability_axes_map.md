@@ -28,7 +28,7 @@
 | システム要件（System Requirements） | `docs/01_requirements/13_functional_requirements.md`<br>`docs/01_requirements/14_non_functional_requirements.md`<br>`docs/01_requirements/15_acceptance_criteria.md` | 要求を機能要求・非機能要求・受入条件へ落とし込む正本 |
 | アーキテクチャ設計（Architectural Design） | `docs/03_internal_design/30_architecture_design.md`<br>`docs/03_internal_design/31_domain_model.md` | システム境界、責務分割、主要概念、集約境界を定義する |
 | 詳細設計（Detailed Design） | `docs/03_internal_design/32_state_machine_design.md` ～ `docs/03_internal_design/39_interface_contract.md` | 状態、データ、モジュール、描画、入力、異常系、内部契約を分割管理する |
-| ソースコード（Implementation） | `src/` | 設計・契約に基づく実装本体 |
+| ソースコード（Implementation） | `src/DocDD_coding/`<br>`src/vibe_coding/vibe_code_tetris.py` | DocDD 正本実装は `src/DocDD_coding/`。`vibe_code_tetris.py` は短いリクエスト由来の比較成果物であり、正本実装とは分離する |
 | 単体 / 結合テスト（Unit / Integration Test） | `docs/04_quality_assurance/40_test_strategy.md`<br>`docs/04_quality_assurance/41_test_cases_game_rules.md`<br>`docs/04_quality_assurance/42_test_cases_ui_input.md`<br>`docs/04_quality_assurance/43_test_cases_edge_conditions.md` | 設計どおりに動くかを検証する試験方針・試験仕様 |
 | システムテスト（System Test） | `docs/01_requirements/15_acceptance_criteria.md`<br>`docs/01_requirements/16_traceability_matrix.md`<br>`docs/04_quality_assurance/44_performance_test_plan.md` | 要求を満たしているかを受入・性能・縦断追跡の観点で確認する |
 
@@ -90,7 +90,8 @@ BR -> UC -> DM -> SR / NSR -> EXT -> Internal Contract -> TC
 - 実装判断に使ってよい文書かどうかを確認したい場合は `docs/00_overview/05_document_maturity_matrix.md` を併読する
 - 正本の要求定義を確認したい場合は `docs/01_requirements/13_functional_requirements.md` ～ `15_acceptance_criteria.md` を優先して読む
 - 外部仕様の具体像を確認したい場合は `docs/02_external_spec/20_game_rules_spec.md` ～ `26_save_replay_config_spec.md` を続けて参照する
-- 設計判断や実装根拠を確認したい場合は `docs/03_internal_design/30_architecture_design.md` ～ `39_interface_contract.md` と `src/` を対応付けて読む
+- 設計判断や実装根拠を確認したい場合は `docs/03_internal_design/30_architecture_design.md` ～ `39_interface_contract.md` と `src/DocDD_coding/` を対応付けて読む
+- `src/vibe_coding/vibe_code_tetris.py` は比較対象として参照し、仕様適合判断の一次根拠にはしない
 - 検証観点を確認したい場合は `docs/04_quality_assurance/40_test_strategy.md` ～ `44_performance_test_plan.md` と `docs/01_requirements/16_traceability_matrix.md` を併読する
 
 ---

@@ -130,7 +130,10 @@
 | `docs/02_external_spec/21_ui_screen_spec.md` | 画面構成、表示要素、画面遷移、NEXT 表示方針を定義する |
 | `docs/02_external_spec/22_input_operation_spec.md` | 入力手段、論理入力、SELECT 含む状態別入力を定義する |
 | `docs/02_external_spec/23_scoring_level_spec.md` | スコア計算、レベル上昇、速度表を定義する |
+| `docs/02_external_spec/23a_timing_constants_spec.md` | ARE、ライン消去待ち、ソフトドロップのフレーム定数を定義する |
+| `docs/02_external_spec/23b_display_limits_spec.md` | SCORE/LINES/LEVEL の表示・内部上限と replay frame=0 起点を定義する |
 | `docs/02_external_spec/24_piece_rotation_collision_spec.md` | 回転、衝突、失敗、T-Spin 前提を定義する |
+| `docs/02_external_spec/24a_piece_shape_spawn_spec.md` | ピース形状 occupied_offsets と spawn origin を定義する |
 | `docs/02_external_spec/25_pause_gameover_resume_spec.md` | ポーズ、再開、ゲームオーバー、再試行を定義する |
 | `docs/02_external_spec/26_save_replay_config_spec.md` | 設定・保存・リプレイ仕様と schema 正本方針を定義する |
 
@@ -185,10 +188,13 @@
 
 1. `20_game_rules_spec.md`
 2. `23_scoring_level_spec.md`
-3. `22_input_operation_spec.md`
-4. `21_ui_screen_spec.md`
-5. `24_piece_rotation_collision_spec.md`
-6. `25_pause_gameover_resume_spec.md`
+3. `23a_timing_constants_spec.md`
+4. `23b_display_limits_spec.md`
+5. `22_input_operation_spec.md`
+6. `21_ui_screen_spec.md`
+7. `24_piece_rotation_collision_spec.md`
+8. `24a_piece_shape_spawn_spec.md`
+9. `25_pause_gameover_resume_spec.md`
 
 ### 7.3 設計把握順序
 
@@ -242,6 +248,7 @@ Traceability Matrix / Review Log / Change Log
 
 - 実装より先に、関係する要求・仕様・設計文書を確認する
 - 実装で仕様を決めない。先に文書を更新する
+- DocDD 実装成果物は `src/DocDD_coding/` へ配置し、`src/vibe_coding/vibe_code_tetris.py` は比較成果物として分離管理する
 - 仕様変更時は影響文書を同一変更で更新する
 - 文書更新を伴わない仕様変更は未完了とみなす
 

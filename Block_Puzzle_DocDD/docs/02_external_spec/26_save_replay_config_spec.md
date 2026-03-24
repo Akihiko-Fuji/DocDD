@@ -6,6 +6,7 @@
 - 関連文書:
   - `docs/01_requirements/14_non_functional_requirements.md`
   - `docs/02_external_spec/22_input_operation_spec.md`
+  - `docs/02_external_spec/23b_display_limits_spec.md`
   - `docs/03_internal_design/33_data_model.md`
   - `docs/03_internal_design/34_module_design.md`
   - `docs/04_quality_assurance/40_test_strategy.md`
@@ -66,7 +67,7 @@
 
 ### 4.2 replay の粒度
 - replay は**入力変化時のみを記録する sparse 形式**とする
-- `inputs[].frame` はセッション開始からの 0 起算フレーム番号とする
+- `inputs[].frame` はセッション開始からの 0 起算フレーム番号とする（frame=0 の定義は `23b_display_limits_spec.md` §6 を正本とする）
 - `inputs[].buttons` はそのフレームで成立した論理入力集合とする
 - 入力変化がないフレームは記録不要とし、再生時は直前フレームとの差分ではなく「そのフレームで発生した押下イベント」として扱う
 - 同一フレームで複数入力がある場合は 1 レコード内の配列で表現する

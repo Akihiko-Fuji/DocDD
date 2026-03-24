@@ -6,7 +6,10 @@
   - `40_test_strategy.md`
   - `20_game_rules_spec.md`
   - `23_scoring_level_spec.md`
+  - `23a_timing_constants_spec.md`
+  - `23b_display_limits_spec.md`
   - `24_piece_rotation_collision_spec.md`
+  - `24a_piece_shape_spawn_spec.md`
   - `32_state_machine_design.md`
   - `46_test_fixtures_catalog.md`
 

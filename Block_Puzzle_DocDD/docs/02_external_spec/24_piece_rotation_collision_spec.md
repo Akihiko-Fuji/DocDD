@@ -10,6 +10,7 @@
   - `docs/02_external_spec/22_input_operation_spec.md`
   - `docs/02_external_spec/23_scoring_level_spec.md`
   - `docs/03_internal_design/32_state_machine_design.md`
+  - `docs/02_external_spec/24a_piece_shape_spawn_spec.md`
 
 ---
 
@@ -62,6 +63,7 @@ T ピース回転中心の 4 つの対角位置のうち、盤面外または固
 - y は上から下へ増加する
 - 盤面左上を可視領域基準とする
 - 出現姿勢はピース種ごとに固定する
+- 出現姿勢・occupied_offsets・出現 origin は `24a_piece_shape_spawn_spec.md` を正本とする
 
 ---
 
