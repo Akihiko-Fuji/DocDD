@@ -4,6 +4,7 @@
 - 最終更新日: 2026-03-24
 - 関連文書:
   - `docs/02_external_spec/21_ui_screen_spec.md`
+  - `docs/02_external_spec/23b_display_limits_spec.md`
   - `docs/03_internal_design/30_architecture_design.md`
   - `docs/03_internal_design/34_module_design.md`
   - `docs/03_internal_design/39_interface_contract.md`
@@ -137,6 +138,7 @@ UI 仕様で求める表示要素を、**添付の Game Boy 風参考画面を 6
 - 参考画像に合わせ、各パネルは同寸法・同余白の繰り返しパターンとする
 - ラベルは上寄せ中央寄り、値は下段中央寄せを基本とし、Game Boy 風の「見出し + 数値」二段構成を維持する
 - 数値更新はゲームロジックに追随するが、描画側で丸めや推定を行わない
+- 桁数上限は `23b_display_limits_spec.md` に従い SCORE=6 桁、LINES=3 桁、LEVEL=2 桁を前提にレイアウトを固定する
 
 ### 6.4 メッセージ / オーバーレイ
 - T-Spin メッセージは `status_message_anchor` 周辺に短時間表示する

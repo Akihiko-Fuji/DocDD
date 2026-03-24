@@ -10,6 +10,8 @@
   - `docs/02_external_spec/24_piece_rotation_collision_spec.md`
   - `docs/03_internal_design/32_state_machine_design.md`
   - `docs/04_quality_assurance/40_test_strategy.md`
+  - `docs/02_external_spec/23a_timing_constants_spec.md`
+  - `docs/02_external_spec/23b_display_limits_spec.md`
 
 ---
 
@@ -78,7 +80,7 @@ T-Spin 成立時も `基本点 × (レベル + 1)` を適用する。
 表示上限は 999,999 とする。
 
 - 表示値が上限を超える場合は `999999` 表示で固定してよい
-- 内部保持値を上限以上まで持つかどうかは設計へ委譲する
+- 内部保持値は `23b_display_limits_spec.md` に従い 999,999 でキャップする
 
 ---
 
@@ -132,7 +134,7 @@ Game Boy 基準として、1 行落下に必要なフレーム数を以下とす
 | 20 | 3 |
 
 補足:
-- ソフトドロップは外部上 1/3G 相当とする
+- ソフトドロップは `23a_timing_constants_spec.md` に従い 3 frames/row（1/3G @60fps）とする
 - Game Boy 実機相当のフレーム基準を採るため、内部時間管理はこれを崩してはならない
 
 ---

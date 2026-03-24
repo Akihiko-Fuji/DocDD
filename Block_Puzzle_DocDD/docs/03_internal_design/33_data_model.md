@@ -6,6 +6,9 @@
   - `docs/02_external_spec/20_game_rules_spec.md`
   - `docs/02_external_spec/23_scoring_level_spec.md`
   - `docs/02_external_spec/24_piece_rotation_collision_spec.md`
+  - `docs/02_external_spec/24a_piece_shape_spawn_spec.md`
+  - `docs/02_external_spec/23a_timing_constants_spec.md`
+  - `docs/02_external_spec/23b_display_limits_spec.md`
   - `docs/02_external_spec/26_save_replay_config_spec.md`
   - `docs/03_internal_design/31_domain_model.md`
   - `docs/03_internal_design/32_state_machine_design.md`
@@ -62,7 +65,7 @@
 
 不変条件:
 - `rotation` は `0,1,2,3` のいずれかに限る
-- `occupied_offsets` は 4 セル分を保持し、各セルは同一座標を重複しない
+- `occupied_offsets` は 4 セル分を保持し、各セルは同一座標を重複しない（正本値は `24a_piece_shape_spawn_spec.md`）
 - `occupied_offsets` を `origin_x`, `origin_y` に加算した結果は、評価対象時点で盤面境界判定可能でなければならない
 
 ### 4.3 CurrentPiece と PieceState の関係
@@ -110,7 +113,7 @@
 
 不変条件:
 - `state != ST-PLAY` のとき `play_substate` は `None` でもよい
-- `frame` は 0 起算の単調増加整数とする
+- `frame` は 0 起算の単調増加整数とする（frame=0 の起点は `23b_display_limits_spec.md` §6 に従う）
 - `state == ST-PLAY` のとき `board`, `next_queue`, `score_state` は必須とする
 
 ### 4.7 InputSnapshot
