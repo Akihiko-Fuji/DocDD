@@ -23,24 +23,23 @@ DocDD の正本実装は src/DocDD_coding/ に置く。
  
 import tkinter as tk
 import random
-from pathlib import Path
  
 # ─── 定数 ──────────────────────────────────────────────────────
-CELL   = 24   # 1マスのピクセルサイズ（横・縦とも）
-BOARD_W = 10  # 盤面の横マス数
-BOARD_H = 18  # 盤面の縦マス数（公式仕様: 10×18）
-TICK   = 400  # 自動落下の間隔（ミリ秒）。小さいほど速い
+CELL   = 24
+BOARD_W = 10
+BOARD_H = 18
+TICK   = 400
  
 # 7種テトロミノの形状定義。各リストは「どのマスを占有するか」を (x, y) の組で表す。
 # ※ この座標系は公式文書の定義と軸の扱いが異なる（ファイル冒頭の注意を参照）
 SHAPES = [
-    [(0,1),(1,1),(2,1),(3,1)],          # I ピース（横棒）
-    [(1,0),(2,0),(1,1),(2,1)],          # O ピース（正方形）
-    [(1,0),(0,1),(1,1),(2,1)],          # T ピース（T字）
-    [(1,0),(2,0),(0,1),(1,1)],          # S ピース（右上がり段）
-    [(0,0),(1,0),(1,1),(2,1)],          # Z ピース（左上がり段）
-    [(0,0),(0,1),(1,1),(2,1)],          # J ピース（左上突起）
-    [(2,0),(0,1),(1,1),(2,1)],          # L ピース（右上突起）
+    [(0,1),(1,1),(2,1),(3,1)],
+    [(1,0),(2,0),(1,1),(2,1)],
+    [(1,0),(0,1),(1,1),(2,1)],
+    [(1,0),(2,0),(0,1),(1,1)],
+    [(0,0),(1,0),(1,1),(2,1)],
+    [(0,0),(0,1),(1,1),(2,1)],
+    [(2,0),(0,1),(1,1),(2,1)],
 ]
  
 
@@ -57,22 +56,11 @@ class Game:
     def __init__(self):
         """
         以下をまとめて行う:
-          1. フォント画像の読み込み先を決める
-          2. ウィンドウとキャンバス（描画エリア）を作る
-          3. キーボード入力とゲーム操作を結び付ける
-          4. フォントを読み込む
-          5. 盤面を初期化してゲームループを開始する
+          1. ウィンドウとキャンバス（描画エリア）を作る
+          2. キーボード入力とゲーム操作を結び付ける
+          3. 盤面を初期化してゲームループを開始する
         """
-        # フォント画像（PNG グリフ）が置かれているフォルダを決める
-        self.fontset_dir = Path(__file__).resolve().parent.parent / "art" / "fontset"
-        # 文字 → PNG画像 の辞書（キー: 1文字の大文字、値: PhotoImage オブジェクト）
-        self.font_glyphs = {}
-        # loop() のたびに再描画するため、画像参照を保持するリスト（GCによる消去防止）
-        self.font_image_refs = []
- 
-        # メインウィンドウを作る
         self.root = tk.Tk()
-        # 描画エリア（キャンバス）を作る。盤面の下に1行分（32px）の案内表示を加えた高さにする
         self.canvas = tk.Canvas(
             self.root,
             width=CELL * BOARD_W,
@@ -82,18 +70,15 @@ class Game:
         )
         self.canvas.pack()
  
-        # キーボードの各キーに操作を割り当てる
         for key, func in [
-            ("<Left>",  lambda e: self.move(-1)),     # 左移動
-            ("<Right>", lambda e: self.move(1)),      # 右移動
-            ("<Down>",  lambda e: self.move(0, 1)),   # 1段落下（ソフトドロップ）
-            ("<Up>",    lambda e: self.move(0, 0, 1)),# 時計回り回転
-            ("r",       self.reset),                  # リスタート
+            ("<Left>",  lambda e: self.move(-1)),
+            ("<Right>", lambda e: self.move(1)),
+            ("<Down>",  lambda e: self.move(0, 1)),
+            ("<Up>",    lambda e: self.move(0, 0, 1)),
+            ("r",       self.reset),
         ]:
             self.root.bind(key, func)
- 
-        # フォント読み込み → 盤面初期化 → ゲームループ開始 → ウィンドウを表示し続ける
-        self.load_fontset()
+
         self.reset()
         self.loop()
         self.root.mainloop()
@@ -107,9 +92,7 @@ class Game:
  
         ピースの状態は [形番号, x座標, y座標, 回転状態] の4要素リストで持つ。
         """
-        # 盤面を全マス 0（空）で初期化する。0=空、1=固定済みブロック
         self.board = [[0] * BOARD_W for _ in range(BOARD_H)]
-        # ピースを [形番号, 開始x, 開始y, 回転(0=初期姿勢)] で初期化する
         self.piece = [random.randrange(len(SHAPES)), 3, 0, 0]
 
  
@@ -128,11 +111,8 @@ class Game:
         """
         shape_id, px, py, rot = piece or self.piece
         cells = SHAPES[shape_id]
-        # 回転を rot 回分だけ適用する（1回 = 時計回り90度）
-        # (x, y) → (y, 3-x) という変換が1回の時計回り回転に対応する
         for _ in range(rot):
             cells = [(y, 3 - x) for x, y in cells]
-        # 形状の相対座標にピースの現在位置を加算して絶対座標に変換する
         return [(px + x, py + y) for x, y in cells]
 
  
@@ -146,9 +126,9 @@ class Game:
             衝突していれば True、していなければ False。
         """
         return any(
-            x < 0 or x >= BOARD_W      # 左右の壁を超える
-            or y < 0 or y >= BOARD_H   # 上下の壁・床を超える
-            or self.board[y][x]        # すでに固定されているブロックと重なる
+            x < 0 or x >= BOARD_W
+            or y < 0 or y >= BOARD_H
+            or self.board[y][x]
             for x, y in cells
         )
 
@@ -166,19 +146,15 @@ class Game:
             dy : 縦方向の移動量（+1=1段下, 0=移動なし）
             rot: 回転量（1=時計回り1回, 0=回転なし）
         """
-        # 現在のピース状態をコピーして、移動・回転を仮適用する
         next_piece = self.piece[:]
-        next_piece[1] += dx                          # x座標を横移動
-        next_piece[2] += dy                          # y座標を縦移動
-        next_piece[3] = (next_piece[3] + rot) % 4   # 回転状態を更新（0〜3 で循環）
- 
+        next_piece[1] += dx
+        next_piece[2] += dy
+        next_piece[3] = (next_piece[3] + rot) % 4
+
         if self.hit(self.cells(next_piece)):
-            # 衝突した場合
             if dy:
-                # 下方向への移動が衝突 = 床か積み上がりに当たった = 固定処理へ
                 self.lock()
         else:
-            # 衝突しなければ、仮適用した位置を正式に採用する
             self.piece = next_piece
 
 
@@ -192,71 +168,18 @@ class Game:
           4. 次のピースをランダムに出現させる
           5. 新しいピースがすでに盤面に当たる（=積み上がりすぎ）なら reset() する
         """
-        # ピースのマスを盤面に書き込む
         for x, y in self.cells():
             self.board[y][x] = 1
  
-        # 完成していない行（0が1つ以上含まれる行）だけを残す → 完成行が自動的に消える
         self.board = [row for row in self.board if 0 in row]
  
-        # 消えた行の分だけ、盤面の上に空行を追加して高さを元に戻す
-        cleared = BOARD_H - len(self.board)  # 消えた行数
+        cleared = BOARD_H - len(self.board)
         self.board = [[0] * BOARD_W for _ in range(cleared)] + self.board
  
-        # 次のピースをランダムに選んで上部中央に出現させる
         self.piece = [random.randrange(len(SHAPES)), 3, 0, 0]
  
-        # 出現直後から衝突していれば、積み上がりすぎでゲームオーバー → リセット
         if self.hit(self.cells()):
             self.reset()
-
-    # art/fontset フォルダから PNG グリフ画像を読み込む
-    def load_fontset(self):
-        """
-        フォルダが存在しない場合は何もしない（フォールバックで通常テキスト表示になる）。
-        ファイル名が1文字（例: A.png, 0.png）のものだけを対象とし、
-        self.font_glyphs に「文字 → 画像」の辞書として保存する。
-        """
-        if not self.fontset_dir.exists():
-            # フォルダがなければスキップ（フォントなしでも動作する）
-            return
-        for png in self.fontset_dir.glob("*.png"):
-            char = png.stem.upper()          # ファイル名から拡張子を除いた1文字を取得
-            if len(char) != 1:
-                continue                     # 複数文字のファイル名（ex.png など）は除外
-            self.font_glyphs[char] = tk.PhotoImage(file=str(png))
-
-    # 指定した座標にテキストを固定幅フォントで描画する
-    def draw_fixed_text(self, x, y, text):
-        """
-        PNG グリフが読み込まれていれば 1文字=32px の固定幅で並べて描画する。
-        グリフがなければ tkinter 標準のテキスト描画にフォールバックする。
-        小文字が渡された場合は大文字に正規化してから描画する（仕様準拠）。
- 
-        引数:
-            x   : 描画開始位置の左端 x 座標（ピクセル）
-            y   : 描画開始位置の上端 y 座標（ピクセル）
-            text: 描画する文字列
-        """
-        # 仕様に合わせ、英小文字は大文字に正規化してから描画する
-        normalized = text.upper()
- 
-        if not self.font_glyphs:
-            # PNG グリフが読み込まれていない場合は通常のテキスト描画で代替する
-            self.canvas.create_text(x, y, text=normalized, fill="white", anchor="nw")
-            return
- 
-        cursor_x = x  # 文字を置いていく現在のx位置
-        for char in normalized:
-            if char == " ":
-                cursor_x += 32  # スペースは1文字分だけ右にずらして何も描かない
-                continue
-            glyph = self.font_glyphs.get(char)
-            if glyph is not None:
-                self.canvas.create_image(cursor_x, y, image=glyph, anchor="nw")
-                # tkinter のガベージコレクション対策として参照を保持しておく
-                self.font_image_refs.append(glyph)
-            cursor_x += 32  # 次の文字の位置に進む（グリフが存在しない文字も幅分だけ空ける）
 
     # ゲームの1フレーム分の処理をまとめて行い、次フレームを予約する
     def loop(self):
@@ -272,12 +195,8 @@ class Game:
           5. ピースを1段自動落下させる（衝突すれば lock() が呼ばれる）
           6. TICK ミリ秒後に再びこの関数を呼ぶよう予約する
         """
-        # 前フレームの描画内容を全て消去する
         self.canvas.delete("all")
-        # 画像参照リストも毎フレームリセットする（再描画のたびに追加していくため）
-        self.font_image_refs = []
  
-        # 固定済みブロックを白い四角で描く
         [
             self.canvas.create_rectangle(
                 x * CELL, y * CELL, x * CELL + CELL, y * CELL + CELL,
@@ -285,10 +204,9 @@ class Game:
             )
             for y, row in enumerate(self.board)
             for x, value in enumerate(row)
-            if value  # value=1 のマスだけ描く
+            if value
         ]
  
-        # 操作中の現在ピースをシアン（水色）の四角で描く
         [
             self.canvas.create_rectangle(
                 x * CELL, y * CELL, x * CELL + CELL, y * CELL + CELL,
@@ -297,13 +215,10 @@ class Game:
             for x, y in self.cells()
         ]
  
-        # 盤面の下にキー操作の案内テキストを描く
-        self.draw_fixed_text(0, CELL * BOARD_H, "r:restart")
+        self.canvas.create_text(0, CELL * BOARD_H, text="r:restart", fill="white", anchor="nw")
  
-        # ピースを1段下に自動落下させる（衝突すれば lock() が呼ばれる）
         self.move(0, 1)
  
-        # TICK ミリ秒後に再びこの関数を呼ぶことでゲームループが続く
         self.root.after(TICK, self.loop)
  
  
