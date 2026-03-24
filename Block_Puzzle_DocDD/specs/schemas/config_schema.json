@@ -2,41 +2,71 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://example.local/block-puzzle/config.schema.json",
   "title": "Block Puzzle Config (normalized from config.ini)",
+  "description": "config.ini を読み込み正規化した Config オブジェクトの schema。input_interface の値に応じて keyboard_bindings または gamepad_bindings の一方のみが必須となる（oneOf 分岐による条件付き必須）。26_save_replay_config_spec.md §3.2 の「input_interface に応じて一方のみを参照する」方針に合わせて修正。",
   "type": "object",
   "additionalProperties": false,
   "properties": {
-    "version": { "type": "integer", "minimum": 1 },
-    "start_level": { "type": "integer", "minimum": 0, "maximum": 9 },
-    "input_interface": { "type": "string", "enum": ["keyboard", "gamepad"] },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "形式バージョン。version 1 を初版とする。"
+    },
+    "start_level": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9,
+      "description": "既定開始レベル（0〜9）。未指定時の既定値は 0。"
+    },
+    "input_interface": {
+      "type": "string",
+      "enum": ["keyboard", "gamepad"],
+      "description": "利用する入力インターフェース。keyboard または gamepad。未指定時の既定値は keyboard。"
+    },
     "keyboard_bindings": {
       "type": "object",
       "additionalProperties": false,
+      "description": "論理入力名から物理キーコードへのマッピング。input_interface=keyboard のとき必須。",
       "properties": {
-        "left": { "type": "string" },
-        "right": { "type": "string" },
-        "down": { "type": "string" },
-        "a": { "type": "string" },
-        "b": { "type": "string" },
-        "start": { "type": "string" },
-        "select": { "type": "string" }
+        "left":   { "type": "string", "description": "例: ArrowLeft" },
+        "right":  { "type": "string", "description": "例: ArrowRight" },
+        "down":   { "type": "string", "description": "例: ArrowDown" },
+        "a":      { "type": "string", "description": "例: KeyX" },
+        "b":      { "type": "string", "description": "例: KeyZ" },
+        "start":  { "type": "string", "description": "例: Enter" },
+        "select": { "type": "string", "description": "例: ShiftRight" }
       },
       "required": ["left", "right", "down", "a", "b", "start", "select"]
     },
     "gamepad_bindings": {
       "type": "object",
       "additionalProperties": false,
+      "description": "論理入力名から物理ボタン名へのマッピング。input_interface=gamepad のとき必須。",
       "properties": {
-        "left": { "type": "string" },
-        "right": { "type": "string" },
-        "down": { "type": "string" },
-        "a": { "type": "string" },
-        "b": { "type": "string" },
-        "start": { "type": "string" },
-        "select": { "type": "string" }
+        "left":   { "type": "string", "description": "例: DPadLeft" },
+        "right":  { "type": "string", "description": "例: DPadRight" },
+        "down":   { "type": "string", "description": "例: DPadDown" },
+        "a":      { "type": "string", "description": "例: Button1" },
+        "b":      { "type": "string", "description": "例: Button2" },
+        "start":  { "type": "string", "description": "例: Start" },
+        "select": { "type": "string", "description": "例: Back" }
       },
       "required": ["left", "right", "down", "a", "b", "start", "select"]
     },
-    "randomizer_seed": { "type": "integer", "minimum": 0 }
+    "randomizer_seed": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "テスト・再現確認用の任意 seed 値。未指定時は通常疑似乱数を使用する。"
+    }
   },
-  "required": ["version", "start_level", "input_interface", "keyboard_bindings", "gamepad_bindings"]
+  "required": ["version", "start_level", "input_interface"],
+  "oneOf": [
+    {
+      "properties": { "input_interface": { "const": "keyboard" } },
+      "required": ["keyboard_bindings"]
+    },
+    {
+      "properties": { "input_interface": { "const": "gamepad" } },
+      "required": ["gamepad_bindings"]
+    }
+  ]
 }
