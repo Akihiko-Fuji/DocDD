@@ -221,11 +221,12 @@ A ボタン入力で `rotation = (rotation + 1) % 4`、B ボタン入力で `rot
 1. 全 7 種・全 4 回転の occupied_offsets が一意に定まること
 2. 出現座標が固定され、ゲームオーバー判定がテスト導出可能であること
 3. T-Spin 判定の回転中心（origin）と対角4点の関係が本書だけで追跡できること
-4. superminimum.py 等の参考実装と本書の座標系の対応が確認できること
+4. `src/vibe_coding/vibe_code_tetris.py`（比較用バイブコーディング成果物）等の参考実装と本書の座標系の対応が確認できること
 5. 実装者が「どのピースがどのセルを占有するか」を他文書を参照せず判定できること
 
 ---
 
 ## 8. 変更履歴
 
+- 2026-03-24: 参照実装の記載を `src/vibe_coding/vibe_code_tetris.py`（比較用バイブコーディング成果物）へ更新し、O ピース出現座標の整合修正を反映
 - 2026-03-24: 新規作成。`24_piece_rotation_collision_spec.md` の座標委譲先として、全ピース occupied_offsets・出現座標・T-Spin 回転中心を確定

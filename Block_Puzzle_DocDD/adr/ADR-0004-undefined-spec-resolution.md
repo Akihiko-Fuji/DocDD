@@ -9,7 +9,7 @@
   - `docs/02_external_spec/23a_timing_constants_spec.md`（新規）
   - `docs/02_external_spec/23b_display_limits_spec.md`（新規）
   - `specs/schemas/config_schema.json`（修正）
-  - `src/superminimum.py`（注記追加）
+  - `src/vibe_coding/vibe_code_tetris.py`（比較用成果物として注記更新）
   - `docs/02_external_spec/24_piece_rotation_collision_spec.md`
   - `docs/02_external_spec/23_scoring_level_spec.md`
   - `docs/02_external_spec/26_save_replay_config_spec.md`
@@ -30,7 +30,7 @@
 8. LINES・LEVEL の表示桁数と上限が未定義
 9. SCORE の内部保持値キャップ判断が設計委譲のまま
 10. replay の frame=0 がどの状態を指すかが未定義
-11. `superminimum.py` の座標系・BOARD_H が文書と不整合（注記なし）
+11. `src/vibe_coding/vibe_code_tetris.py`（旧 `superminimum.py`）の座標系・BOARD_H が文書と不整合（注記なし）
 
 ---
 
@@ -79,12 +79,12 @@
 - 変更後: `oneOf` 分岐を追加し、`input_interface=keyboard` のときのみ `keyboard_bindings` 必須、`input_interface=gamepad` のときのみ `gamepad_bindings` 必須とした
 - 根拠: `26_save_replay_config_spec.md` §3.2「`input_interface` に応じて一方のみを参照する」との矛盾を解消するため
 
-### 2.5 superminimum.py への注記追加
+### 2.5 `src/vibe_coding/vibe_code_tetris.py` への注記更新
 
-`src/superminimum.py` の先頭コメントに以下を追記した。
+`src/vibe_coding/vibe_code_tetris.py`（旧 `superminimum.py`）の先頭コメントに以下を反映した。
 
 - SHAPES の座標系が文書（`board[y][x]`、x 右増加・y 下増加）と異なる旨
-- `BOARD_H = 20` が公式仕様 18 と異なる旨（本ファイルは仕様の正本でない旨）
+- `BOARD_H` は公式仕様に合わせて `18` へ修正済みである旨（比較用成果物であり仕様正本ではない旨）
 
 ---
 
@@ -114,10 +114,11 @@
 本 ADR では扱わなかった項目（DocDD 上は Minor として分類）を以下に残す。
 
 - Game Boy 版の randomizer アルゴリズムの詳細実装（再抽選ロジック）は `spawn_service` 実装時に別 ADR または設計文書で確定する
-- `superminimum.py` の SHAPES 定義と文書座標系の完全な整合（注記で留めた）
+- `src/vibe_coding/vibe_code_tetris.py` の SHAPES 定義と文書座標系の完全な整合（注記で留めた）
 
 ---
 
 ## 6. 変更履歴
 
+- 2026-03-24: `superminimum.py` の `src/vibe_coding/vibe_code_tetris.py` へのリネーム、および比較成果物としての位置づけ更新に合わせて参照先を更新。`BOARD_H` が 18 に修正済みである記述へ同期
 - 2026-03-24: DocDD レビュー指摘の未定義 11 項目を受け、3 つの補完仕様文書・schema 修正・注記追加を一括確定
