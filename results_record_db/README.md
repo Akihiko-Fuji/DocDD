@@ -523,6 +523,7 @@ CREATE INDEX idx_work_log_order_process  ON work_log (order_no, process_name);
 
 ```text
 ING_20260105_081530_001
+```
 
 ## 想定する3種の元ログフォーマット
 
@@ -751,3 +752,335 @@ ING_20260105_081530_001
 
 この順にすることで、
 「異なるログフォーマットを共通契約へ落とす」というテーマを段階的に説明しやすくする。
+
+---
+
+## 取り込む予定の実績ログデータの詳細設計
+
+本テーマでは、工程ごとに性格の異なる3種類の元ログを想定する。  
+採用順は以下とする。
+
+1. 文脈補完が必要な設備生ログ → 内装組立
+2. 業務列が多い実績ログ → 外装組立
+3. 判定を丸める検査ログ → 出荷検査
+
+この順にする理由は、取込難易度と業務意味付けの差を明確に見せやすいためである。  
+特に1つ目は「そのままでは KPI に使えないログ」、2つ目は「比較的そのまま使いやすいログ」、3つ目は「判定を共通コードへ丸める必要があるログ」として役割が分かれる。
+
+---
+
+## 1. 内装組立ログ（文脈補完が必要な設備生ログ）
+
+### 1.1 位置付け
+
+設備から直接出力された生ログを想定する。  
+ログ自体は START / END の時刻情報が中心で、業務的な意味を十分に持たない。  
+そのため、ファイル名規則や補助情報を用いて、工程名・作業者名・入力元種別を補完して取り込む。
+
+### 1.2 想定するサンプル列名
+
+| サンプル列名 | 型 | 必須 | 説明 |
+|---|---|---:|---|
+| `start_date` | DATE相当文字列 | ○ | 作業開始日 |
+| `start_time` | TIME相当文字列 | ○ | 作業開始時刻 |
+| `start_marker` | 文字列 | ○ | `START` 固定 |
+| `end_date` | DATE相当文字列 | ○ | 作業終了日 |
+| `end_time` | TIME相当文字列 | ○ | 作業終了時刻 |
+| `end_marker` | 文字列 | ○ | `END` 固定 |
+| `order_no` | 文字列 | ○ | 受注No.（補助的に付与済み） |
+
+### 1.3 採用列 / 捨て列 / 変換ルール
+
+| 区分 | 元ログ列 | 正規化先 | 変換ルール |
+|---|---|---|---|
+| 採用 | `order_no` | `order_no` | trim のみ |
+| 採用 | `start_date` + `start_time` | `start_ts` | 連結して TIMESTAMP 化 |
+| 採用 | `end_date` + `end_time` | `end_ts` | 連結して TIMESTAMP 化 |
+| 採用 | ファイル名 | `worker_name` | ファイル名規則から補完 |
+| 採用 | ファイル名 | `process_name` | `内部組立` を付与 |
+| 採用 | ファイル名 | `source_system` | `internal_assembly_tool` を付与 |
+| 変換 | `start_ts`, `end_ts` | `elapsed_sec` | 単純差分秒を計算 |
+| 変換 | `start_ts`, `end_ts` | `work_sec` | 稼働カレンダー控除後秒を計算 |
+| 変換 | 固定値 | `result_cd` | `OK` を付与 |
+| 捨て列 | `start_marker` | なし | `START` 固定確認後は保持しない |
+| 捨て列 | `end_marker` | なし | `END` 固定確認後は保持しない |
+
+### 1.4 reject 条件の例
+
+- `order_no` が空
+- `start_date` / `start_time` / `end_date` / `end_time` のいずれかが空
+- `start_marker <> 'START'`
+- `end_marker <> 'END'`
+- 日時変換失敗
+- `end_ts < start_ts`
+- `UNIQUE (order_no, process_name)` 違反
+
+### 1.5 サンプルデータ作成時の注意
+
+- ファイル名に作業者名を含める  
+  例: `INTASM_20260105_Yamada_01.csv`
+- 行データには `order_no` のみ付与する
+- `product_name` は別途オーダー別に補完するか、サンプルでは別マスタから引く
+- START/END のみで「そのままでは KPI に使えない」雰囲気を残す
+
+---
+
+## 2. 外装組立ログ（業務列が多い実績ログ）
+
+### 2.1 位置付け
+
+比較的整った実績ログを想定する。  
+受注No.、製品名、開始時刻、終了時刻、資材コード、各種処理数などを多く持ち、主テーブル `work_log` へ比較的素直にマッピングできる。
+
+### 2.2 想定するサンプル列名
+
+| サンプル列名 | 型 | 必須 | 説明 |
+|---|---|---:|---|
+| `production_date_yymmdd` | 文字列 | ○ | 生産日（YYMMDD） |
+| `check_no` | 文字列 | ○ | チェックNo. |
+| `qr_read_ts` | DATETIME相当文字列 | ○ | 加工指示書QRコード読出時刻 |
+| `all_clear_ts` | DATETIME相当文字列 | ○ | 全消込終了時刻 |
+| `production_date` | DATE相当文字列 | △ | 生産日 |
+| `packing_date` | DATE相当文字列 | △ | 梱包作業日 |
+| `tehai_no` | 文字列 | △ | 生産手配No. |
+| `order_no` | 文字列 | ○ | 受注No. |
+| `product_name` | 文字列 | ○ | 製品名 |
+| `width_mm` | 数値 | △ | 製品幅 |
+| `height_mm` | 数値 | △ | 製品丈 |
+| `material_code1` ～ `material_code6` | 文字列 | × | 資材コード |
+| `material_name1` ～ `material_name6` | 文字列 | × | 資材名称 |
+| `material_qty1` ～ `material_qty6` | 数値 | × | 資材数量 |
+| `process_count1` ～ `process_count12` | 数値 | × | 処理数 |
+| `qr_clear_count` | 数値 | × | QR読消込数 |
+| `initial_clear_count` | 数値 | × | 初期消込数 |
+| `forced_clear_count` | 数値 | × | 強制消込数 |
+| `material_pick_count` | 数値 | × | 品揃資材数 |
+| `error_code` | 文字列 | △ | エラーコード |
+
+### 2.3 採用列 / 捨て列 / 変換ルール
+
+| 区分 | 元ログ列 | 正規化先 | 変換ルール |
+|---|---|---|---|
+| 採用 | `order_no` | `order_no` | trim のみ |
+| 採用 | `product_name` | `product_name` | trim のみ |
+| 採用 | `qr_read_ts` | `start_ts` | DATETIME 変換 |
+| 採用 | `all_clear_ts` | `end_ts` | DATETIME 変換 |
+| 採用 | ファイル名または補助規則 | `worker_name` | ファイル名規則または固定表で補完 |
+| 採用 | 固定値 | `process_name` | `外部組立` を付与 |
+| 採用 | 固定値 | `source_system` | `external_assembly_tool` を付与 |
+| 変換 | `start_ts`, `end_ts` | `elapsed_sec` | 単純差分秒を計算 |
+| 変換 | `start_ts`, `end_ts` | `work_sec` | 稼働カレンダー控除後秒を計算 |
+| 変換 | `error_code` | `result_cd` | `error_code` が空なら `OK`、致命エラーなら reject |
+| 捨て列 | `production_date_yymmdd` | なし | 参考情報のため保持しない |
+| 捨て列 | `production_date` | なし | `start_ts` / `end_ts` から代替可能 |
+| 捨て列 | `packing_date` | なし | 今回のKPIでは未使用 |
+| 捨て列 | `tehai_no` | なし | 今回の主表では保持しない |
+| 捨て列 | `width_mm`, `height_mm` | なし | 今回のKPIでは未使用 |
+| 捨て列 | `material_code1` ～ `material_code6` | なし | KPI に未使用 |
+| 捨て列 | `material_name1` ～ `material_name6` | なし | KPI に未使用 |
+| 捨て列 | `material_qty1` ～ `material_qty6` | なし | KPI に未使用 |
+| 捨て列 | `process_count1` ～ `process_count12` | なし | KPI に未使用 |
+| 捨て列 | `qr_clear_count` | なし | KPI に未使用 |
+| 捨て列 | `initial_clear_count` | なし | KPI に未使用 |
+| 捨て列 | `forced_clear_count` | なし | KPI に未使用 |
+| 捨て列 | `material_pick_count` | なし | KPI に未使用 |
+
+### 2.4 reject 条件の例
+
+- `order_no` が空
+- `product_name` が空
+- `qr_read_ts` または `all_clear_ts` が空
+- 日時変換失敗
+- `end_ts < start_ts`
+- `error_code` が致命エラー扱い
+- `UNIQUE (order_no, process_name)` 違反
+
+### 2.5 サンプルデータ作成時の注意
+
+- 実ログ感を出すため、捨て列もファイル上には残す
+- ただし値は新規に作る
+- 一部に `error_code` あり行を混ぜ、reject 例として使う
+- `worker_name` はファイル名補完でも、別列補完でもよいが、方式は固定する
+
+---
+
+## 3. 出荷検査ログ（判定を丸める検査ログ）
+
+### 3.1 位置付け
+
+検査工程の帳票・検査システム出力を想定する。  
+作業時刻や受注No.に加えて、不良明細や不適合内訳を多く持つ。  
+そのまま主テーブルへ入れるのではなく、判定結果を `OK / NG` へ丸めて取り込む。
+
+### 3.2 想定するサンプル列名
+
+| サンプル列名 | 型 | 必須 | 説明 |
+|---|---|---:|---|
+| `inspector_name` | 文字列 | ○ | 担当者 |
+| `inspection_date` | DATE相当文字列 | ○ | 検査日 |
+| `slip_no` | 文字列 | △ | 伝票No. |
+| `product_name` | 文字列 | ○ | 製品名 |
+| `start_time` | TIME相当文字列 | ○ | 開始時間 |
+| `end_time` | TIME相当文字列 | ○ | 終了時間 |
+| `work_minutes` | 数値 | △ | 作業時間（分） |
+| `tehai_no` | 文字列 | △ | 生産手配ＮＯ |
+| `order_no` | 文字列 | ○ | 受注ＮＯ |
+| `bottom_ng_count` | 数値 | △ | ボトム不適合 |
+| `slat_ng_count` | 数値 | △ | スラット不適合 |
+| `balance_ng_count` | 数値 | △ | バランス不適合 |
+| `ng_total` | 数値 | ○ | 不良合計 |
+| その他不適合明細列 | 数値/文字列 | × | 詳細内訳 |
+
+### 3.3 採用列 / 捨て列 / 変換ルール
+
+| 区分 | 元ログ列 | 正規化先 | 変換ルール |
+|---|---|---|---|
+| 採用 | `order_no` | `order_no` | trim のみ |
+| 採用 | `product_name` | `product_name` | trim のみ |
+| 採用 | `inspector_name` | `worker_name` | trim のみ |
+| 採用 | `inspection_date` + `start_time` | `start_ts` | 連結して TIMESTAMP 化 |
+| 採用 | `inspection_date` + `end_time` | `end_ts` | 連結して TIMESTAMP 化 |
+| 採用 | 固定値 | `process_name` | `出荷検査` を付与 |
+| 採用 | 固定値 | `source_system` | `shipping_inspection_tool` を付与 |
+| 変換 | `start_ts`, `end_ts` | `elapsed_sec` | 単純差分秒を計算 |
+| 変換 | `start_ts`, `end_ts` | `work_sec` | 稼働カレンダー控除後秒を計算 |
+| 変換 | `ng_total` | `result_cd` | `ng_total = 0` → `OK`、`ng_total > 0` → `NG` |
+| 捨て列 | `slip_no` | なし | 今回のKPIでは未使用 |
+| 捨て列 | `tehai_no` | なし | 今回の主表では保持しない |
+| 捨て列 | `work_minutes` | なし | `start_ts` / `end_ts` から再計算可能 |
+| 捨て列 | `bottom_ng_count` | なし | `result_cd` 丸め後は未使用 |
+| 捨て列 | `slat_ng_count` | なし | `result_cd` 丸め後は未使用 |
+| 捨て列 | `balance_ng_count` | なし | `result_cd` 丸め後は未使用 |
+| 捨て列 | その他不適合明細列 | なし | KPI に未使用 |
+
+### 3.4 reject 条件の例
+
+- `order_no` が空
+- `product_name` が空
+- `inspector_name` が空
+- `inspection_date` / `start_time` / `end_time` のいずれかが空
+- 日時変換失敗
+- `ng_total` が数値変換できない
+- `end_ts < start_ts`
+- `UNIQUE (order_no, process_name)` 違反
+
+### 3.5 サンプルデータ作成時の注意
+
+- 不良明細列は残しつつ、最終的には `ng_total` から `result_cd` へ丸める
+- `ng_total = 0` の正常検査行を多数派にする
+- `ng_total > 0` の行を少数混ぜ、`NG` 例として使う
+- 一部に `ng_total` 欠損や文字混入を混ぜ、reject 例を作る
+
+---
+
+## 4. 3ログ共通の採用先
+
+3種類の元ログは最終的に、以下の共通テーブル `work_log` へ統合する。
+
+| 物理名 | 論理名 |
+|---|---|
+| `work_log_id` | 処理シーケンスNo. |
+| `order_no` | 受注No.（1台を識別する業務キー） |
+| `product_name` | 製品名 |
+| `process_name` | 工程名 |
+| `worker_name` | 作業者名 |
+| `start_ts` | 開始時間 |
+| `end_ts` | 終了時間 |
+| `elapsed_sec` | 純粋な `end_ts - start_ts` 差分秒 |
+| `work_sec` | 稼働カレンダーに基づいて昼休み・非稼働時間を除いた正味作業時間秒 |
+| `result_cd` | 作業結果（`OK / NG`） |
+| `source_system` | 入力元種別 |
+| `source_file_name` | ファイル名 |
+| `source_row_no` | 行数 |
+| `ingest_batch_id` | 取込実行ID |
+| `created_at` | 取込時間 |
+
+---
+
+## 5. サンプルデータ作成までの段取り
+
+サンプルデータ作成は、以下の順で進める。
+
+### Step 1. サンプル列名を固定する
+まず本書のサンプル列名を確定し、3フォーマットの雛形CSVを作る。
+
+### Step 2. 採用列と捨て列を確定する
+どの列を `work_log` に入れ、どの列を説明用に残すだけかを固定する。
+
+### Step 3. 変換ルールを確定する
+- 日付・時刻の結合方法
+- `worker_name` の補完方法
+- `result_cd` の丸め方
+- `elapsed_sec` / `work_sec` の計算方法
+を先に固定する。
+
+### Step 4. reject 条件を確定する
+サンプルに混ぜる誤りを、reject 条件と対応付けて定義する。
+
+### Step 5. 正常データを先に作る
+まず 2026-01-05 ～ 2026-01-30 の営業日19日分について、正常データだけを作る。
+
+### Step 6. 異常データを後から差し込む
+正常データ作成後に、以下のような誤りを少量混ぜる。
+
+- 同一ファイルの二重取込
+- 必須列欠損
+- 時刻逆転
+- 不正コード
+- 数値変換失敗
+- 列ズレ / 桁ズレ
+
+### Step 7. 正規化結果を確認する
+各ログから `work_log` へ正しく正規化できるかを確認し、
+KPI の3指標が問題なく算出できる状態にする。
+
+---
+
+## 6. 本段階の到達点
+
+本段階の目的は、まだ PostgreSQL DDL や Streamlit 画面を作ることではない。  
+まずは、
+
+- 3種類の元ログフォーマットを固定する
+- 各ログの採用列 / 捨て列 / 変換ルールを決める
+- サンプルデータ生成に迷わない状態を作る
+
+ことを到達点とする。
+
+## 実績ログデータサンプルcsvイメージ
+
+# 1. 内装組立ログ（文脈補完が必要な設備生ログ）
+# 想定ファイル名: INTASM_YamadaTaro_202601.csv
+start_date,start_time,start_marker,end_date,end_time,end_marker,order_no
+2026-01-05,08:12:10,START,2026-01-05,08:24:40,END,ORD-260105-001
+2026-01-05,08:28:05,START,2026-01-05,08:43:15,END,ORD-260105-002
+2026-01-05,08:47:20,START,2026-01-05,09:05:00,END,ORD-260105-003
+2026-01-06,08:05:45,START,2026-01-06,08:21:30,END,ORD-260106-001
+2026-01-06,08:26:10,START,2026-01-06,08:44:55,END,ORD-260106-002
+
+# 2. 外装組立ログ（業務列が多い実績ログ）
+# 想定ファイル名: EXTASM_SatoKen_202601.csv
+production_date_yymmdd,check_no,qr_read_ts,all_clear_ts,production_date,packing_date,tehai_no,order_no,product_name,width_mm,height_mm,material_code1,material_name1,material_qty1,material_code2,material_name2,material_qty2,qr_clear_count,initial_clear_count,forced_clear_count,material_pick_count,error_code
+260105,CHK0001,2026-01-05 09:18:10,2026-01-05 09:33:20,2026-01-05,2026-01-05,TH-260105-001,ORD-260105-001,RS-90X180-WH,900,1800,MAT-A01,HeadRail-WH,1,MAT-B11,Fabric-WH,1,1,1,0,2,
+260105,CHK0002,2026-01-05 09:37:40,2026-01-05 09:54:10,2026-01-05,2026-01-05,TH-260105-002,ORD-260105-002,RS-120X200-GY,1200,2000,MAT-A01,HeadRail-WH,1,MAT-B12,Fabric-GY,1,1,1,0,2,
+260105,CHK0003,2026-01-05 10:02:05,2026-01-05 10:20:25,2026-01-05,2026-01-05,TH-260105-003,ORD-260105-003,VB-50-80X150-IV,800,1500,MAT-C21,Slat-IV,24,MAT-C31,LadderTape-IV,2,1,1,0,2,
+260106,CHK0004,2026-01-06 09:11:30,2026-01-06 09:28:00,2026-01-06,2026-01-06,TH-260106-001,ORD-260106-001,RS-90X180-BE,900,1800,MAT-A01,HeadRail-WH,1,MAT-B13,Fabric-BE,1,1,1,0,2,
+260106,CHK0005,2026-01-06 09:36:50,2026-01-06 09:55:40,2026-01-06,2026-01-06,TH-260106-002,ORD-260106-002,VT-80X200-LG,800,2000,MAT-D11,CarrierSet,1,MAT-D21,Louver-LG,8,1,1,0,2,
+
+# 3. 出荷検査ログ（判定を丸める検査ログ）
+# 想定ファイル名: SHIPCHK_202601.csv
+inspector_name,inspection_date,slip_no,product_name,start_time,end_time,work_minutes,tehai_no,order_no,bottom_ng_count,slat_ng_count,balance_ng_count,ng_total
+SuzukiMika,2026-01-05,SLP-260105-001,RS-90X180-WH,10:05:00,10:14:00,9,TH-260105-001,ORD-260105-001,0,0,0,0
+SuzukiMika,2026-01-05,SLP-260105-002,RS-120X200-GY,10:18:00,10:28:00,10,TH-260105-002,ORD-260105-002,0,0,0,0
+SuzukiMika,2026-01-05,SLP-260105-003,VB-50-80X150-IV,10:34:00,10:46:00,12,TH-260105-003,ORD-260105-003,0,0,0,0
+SuzukiMika,2026-01-06,SLP-260106-001,RS-90X180-BE,10:02:00,10:11:00,9,TH-260106-001,ORD-260106-001,0,0,0,0
+SuzukiMika,2026-01-06,SLP-260106-002,VT-80X200-LG,10:18:00,10:30:00,12,TH-260106-002,ORD-260106-002,0,0,0,0
+
+# 補助マスタ（内装組立ログの product_name 補完用）
+# 想定ファイル名: order_product_master.csv
+order_no,product_name
+ORD-260105-001,RS-90X180-WH
+ORD-260105-002,RS-120X200-GY
+ORD-260105-003,VB-50-80X150-IV
+ORD-260106-001,RS-90X180-BE
+ORD-260106-002,VT-80X200-LG
