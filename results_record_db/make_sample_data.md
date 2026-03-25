@@ -84,7 +84,7 @@
 
 ### 1. 内装組立
 - ログ種別: **文脈補完が必要な設備生ログ**
-- 工程名: `内部組立`
+- 工程名（`process_name`）: `内装組立`
 - `source_system`: `internal_assembly_tool`
 - 自動装置っぽいログ
 - 2台稼働
@@ -94,7 +94,7 @@
 
 ### 2. 外装組立
 - ログ種別: **業務列が多い実績ログ**
-- 工程名: `外部組立`
+- 工程名（`process_name`）: `外装組立`
 - `source_system`: `external_assembly_tool`
 - 人作業
 - 3ライン
@@ -104,7 +104,7 @@
 
 ### 3. 出荷検査
 - ログ種別: **判定を丸める検査ログ**
-- 工程名: `出荷検査`
+- 工程名（`process_name`）: `出荷検査`
 - `source_system`: `shipping_inspection_tool`
 - 4ライン
 - 標準サイクル: **340秒/台**
@@ -154,10 +154,11 @@ production_date_yymmdd,check_no,qr_read_ts,all_clear_ts,production_date,packing_
 - `product_name` は必須
 - `qr_read_ts` を `start_ts` に使う
 - `all_clear_ts` を `end_ts` に使う
-- `process_name` は固定で `外部組立`
+- `process_name` は固定で `外装組立`
 - `worker_name` はファイル名または補助規則から補完してよい
-- `error_code` が空なら正常
-- 異常系データでは `error_code` に致命値を入れてよい
+- **`error_code` が空（空文字）の場合のみ正常とし、`result_cd = OK` とする**
+- **`error_code` に何らかの値が入っている行は、正常系CSVには含めず、異常系CSVに入れること**
+- 異常系データでは `error_code` に値（例: `E001`）を入れてよい
 
 #### 想定ファイル名例
 ```text
@@ -213,7 +214,7 @@ order_no,product_name
 work_log_id         処理シーケンスNo.（期待結果CSVでは不要）
 order_no            受注No.
 product_name        製品名
-process_name        工程名
+process_name        工程名（内装組立 / 外装組立 / 出荷検査 の3値のみ）
 worker_name         作業者名
 start_ts            開始時間
 end_ts              終了時間
@@ -235,6 +236,7 @@ created_at          取込時間（期待結果CSVでは固定値でもよい）
 - 正常系では `end_ts >= start_ts`
 - 同一 `order_no` は、工程ごとに1回のみ出現する
 - したがって、正常系の期待結果では **`UNIQUE(order_no, process_name)` を満たすこと**
+- `process_name` の値は `内装組立` / `外装組立` / `出荷検査` の3値のみ使用すること
 
 ---
 
@@ -271,22 +273,22 @@ created_at          取込時間（期待結果CSVでは固定値でもよい）
 
 ### 工程ごとの異常例
 #### 内装組立
-- `start_marker` が `START` でない
-- `end_marker` が `END` でない
+- `start_marker` が `START` でない（例: `BEGIN`）
+- `end_marker` が `END` でない（例: `STOP`）
 - `order_no` が空
 
 #### 外装組立
 - `order_no` が空
 - `product_name` が空
-- `qr_read_ts` または `all_clear_ts` が不正
-- `error_code` が致命エラー値
+- `qr_read_ts` または `all_clear_ts` が不正（例: `9999-99-99 99:99:99`）
+- `error_code` に値あり（例: `E001`）
 
 #### 出荷検査
 - `order_no` が空
 - `product_name` が空
 - `inspector_name` が空
-- `ng_total` が数値でない
-- `inspection_date` / `start_time` / `end_time` が不正
+- `ng_total` が数値でない（例: `－`、`未記入`）
+- `inspection_date` / `start_time` / `end_time` が不正（例: `20260105` 形式ズレ）
 
 ---
 
@@ -337,6 +339,8 @@ created_at          取込時間（期待結果CSVでは固定値でもよい）
 8. 異常系では、reject 対象にしたい誤りが分かる
 9. 品質検査を 340秒/台・4ライン相当にすることで、工程間滞留が自然に見える
 10. 後で PostgreSQL と Streamlit デモへつなげやすい構成になっている
+11. `process_name` の値は `内装組立` / `外装組立` / `出荷検査` の3値のみ使用すること
+12. 正常系の外装組立ログには `error_code` が空の行のみ含めること
 
 ---
 
