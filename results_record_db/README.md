@@ -506,6 +506,10 @@ CREATE INDEX idx_work_log_order_process  ON work_log (order_no, process_name);
 11. `work_log_reject` へ登録
 12. 取込サマリを記録・表示
 
+> 補足:
+> 実務では取込実行単位を管理する `import_run` テーブルを設けると便利である。
+> ただし本テーマでは説明を簡潔にするため省略し、`ingest_batch_id` を主テーブルと reject テーブルの両方に保持することで代替する。
+
 ---
 
 ## 取込実行単位の記録
