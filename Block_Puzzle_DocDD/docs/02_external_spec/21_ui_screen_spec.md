@@ -2,7 +2,7 @@
 
 - 文書ID: DOC-SPC-021
 - 文書名: UI画面仕様 / UI Screen Specification
-- 最終更新日: 2026-03-24
+- 最終更新日: 2026-04-16
 - 対象プロジェクト: 仮称 `falling-block-puzzle`
 - 目的: 本プロジェクトにおける画面構成、画面ごとの表示要素、入力受付、および画面遷移を外部仕様として定義する
 - 関連文書:
@@ -14,6 +14,7 @@
   - `docs/03_internal_design/27_runtime_flowchart_mermaid.md`
   - `docs/03_internal_design/32_state_machine_design.md`
   - `docs/03_internal_design/35_rendering_design.md`
+  - `docs/02_external_spec/27_image_asset_data_spec.md`
 
 ---
 
