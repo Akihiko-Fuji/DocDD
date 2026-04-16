@@ -1,7 +1,7 @@
 # 文書成熟度マトリクス / Document Maturity Matrix
 
 - 文書ID: DOC-OVW-005
-- 最終更新日: 2026-03-24
+- 最終更新日: 2026-04-16
 - 目的: 各文書の成熟度と利用目的を明示し、未完成と予約仕様を区別できるようにする
 
 ## 1. 本書の位置付け
@@ -87,6 +87,7 @@
 | `24a_piece_shape_spawn_spec.md` | ピース形状・出現座標補完仕様 | Stable | Yes | SHAPES 実装との整合検証ログ反映 |
 | `24_piece_rotation_collision_spec.md` | 回転・衝突 | Stable | Yes | 実装検証結果反映 |
 | `26_save_replay_config_spec.md` | 保存/再現仕様 | Stable | Yes | 永続化導線と UI 通知文言の実運用反映 |
+| `27_image_asset_data_spec.md` | 画像データ仕様 | Draft | Conditional | 画面別素材マップと記号命名の標準化 |
 | `docs/03_internal_design/27_runtime_flowchart_mermaid.md` | 処理順図 | Reference | Conditional | 実装名との同期維持 |
 | `30_architecture_design.md` | 上位アーキテクチャ境界 | Stable | Yes | 実装との差分レビュー運用 |
 | `31_domain_model.md` | ドメイン概念と集約境界 | Stable | Yes | 将来拡張概念の整理 |
@@ -106,6 +107,7 @@
 | `docs/05_project_management/56_document_update_checklist.md` | 実行用 checklist | Stable | Yes | 自動化導線 |
 | `54_issue_management.md` | 課題運用 | Stable | Yes | 運用実績例の追記 |
 | `55_risk_register.md` | リスク運用 | Stable | Yes | 指標化・レビュー履歴 |
+| `docs/06_records/65_art_asset_transaction_log.md` | 画像資産進捗トラッキング | Draft | Conditional | 不足文字解消後の更新運用定着 |
 
 ---
 
@@ -129,6 +131,7 @@
 
 ## 7. 変更履歴
 
+- 2026-04-16: `27_image_asset_data_spec.md` と `65_art_asset_transaction_log.md` を追加し、画像資産の正本仕様と進捗記録を Draft で管理開始
 - 2026-03-24: `06_traceability_axes_map.md` を主要文書マトリクスへ追加し、overview 群の参照整合を補強
 - 2026-03-24: 補完仕様 `23a` / `23b` / `24a` を成熟度マトリクスへ追加し、位置づけ（Stable）を明示
 - 2026-03-24: `26`, `39`, `41`〜`43`, `46` を Stable へ格上げし、現行文書群で実装判断可能な範囲を反映

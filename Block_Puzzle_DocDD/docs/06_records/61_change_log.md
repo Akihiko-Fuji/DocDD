@@ -1,7 +1,12 @@
 # 変更履歴 / Change Log
 
 - 文書ID: DOC-REC-061
-- 最終更新日: 2026-03-24
+- 最終更新日: 2026-04-16
+
+## 2026-04-16
+- `art/fontset` / `art/artwork` の現物棚卸しと、UI表示文言に対する不足文字（優先度付き）を `65_art_asset_transaction_log.md` として記録した
+- 画像資産の配置・形式・命名・整合要件を外部仕様として `27_image_asset_data_spec.md` に新設し、設計文書と進捗記録の役割を分離した
+- 文書一覧と成熟度マトリクスへ上記 2 文書を追加し、画像資産ドキュメントの導線を整備した
 
 ## 2026-03-24
 - Block_Puzzle_DocDD の説明を「完全な言語非依存」ではなく「実装言語への依存を下げる契約記述」として整理し、README・architecture・module design・interface contract を Python / C# / Java / C++ / Rust / Kotlin へ接続しやすい表現へ更新した

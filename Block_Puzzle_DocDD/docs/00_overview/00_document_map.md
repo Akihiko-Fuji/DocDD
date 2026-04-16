@@ -2,7 +2,7 @@
 
 - 文書ID: DOC-OVW-000
 - 文書名: 文書一覧 / Document Map
-- 最終更新日: 2026-03-24
+- 最終更新日: 2026-04-16
 - 対象プロジェクト: 仮称 `falling-block-puzzle`
 - 目的: 本プロジェクトで管理する文書の役割、参照順序、更新責任範囲を明確化する
 
@@ -137,6 +137,7 @@
 | `docs/02_external_spec/24a_piece_shape_spawn_spec.md` | ピース形状 occupied_offsets と spawn origin を定義する |
 | `docs/02_external_spec/25_pause_gameover_resume_spec.md` | ポーズ、再開、ゲームオーバー、再試行を定義する |
 | `docs/02_external_spec/26_save_replay_config_spec.md` | 設定・保存・リプレイ仕様と schema 正本方針を定義する |
+| `docs/02_external_spec/27_image_asset_data_spec.md` | 画像資産（fontset / artwork）の配置・形式・命名・整合要件を定義する |
 
 ### 6.4 Internal Design
 
@@ -170,7 +171,7 @@
 
 意思決定、変更、レビュー、WBS、マイルストーン、リスクを管理する。特に仕様差分や独自拡張は `60_decision_log.md` / `61_change_log.md` / `62_review_log.md` を正本とする。
 
-補助運用文書として、`46_test_fixtures_catalog.md`・`05_document_maturity_matrix.md`・`56_document_update_checklist.md` を追加し、試験再現性、文書成熟度、変更手順の実務運用を補強する。
+補助運用文書として、`46_test_fixtures_catalog.md`・`05_document_maturity_matrix.md`・`56_document_update_checklist.md`・`65_art_asset_transaction_log.md` を追加し、試験再現性、文書成熟度、変更手順、画像資産進捗の実務運用を補強する。
 
 ---
 
@@ -311,5 +312,6 @@ Traceability Matrix / Review Log / Change Log
 
 | 日付 | 内容 |
 |---|---|
+| 2026-04-16 | `27_image_asset_data_spec.md`（画像データ仕様）および `65_art_asset_transaction_log.md`（資産進捗トランザクション記録）を追加し、画像資産の正本仕様と進捗記録の役割分離を明確化 |
 | 2026-03-23 | コア 10 文書のレビュー観点、Game Boy 基準の補強点、参照順序を再整理 |
 | 2026-03-23 | 初版作成 |
