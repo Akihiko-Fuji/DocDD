@@ -38,11 +38,13 @@
 9. [実装前提と補足仕様](#9-実装前提と補足仕様)
    - 9.1 [実装前提](#91-実装前提)
    - 9.2 [work_sec 算出の境界条件](#92-work_sec-算出の境界条件)
-   - 9.3 [worker_name 正規化ルール](#93-worker_name-正規化ルール)
-   - 9.4 [duplicate の扱い](#94-duplicate-の扱い)
-   - 9.5 [テストの期待値](#95-テストの期待値)
-   - 9.6 [Streamlit 画面の最小要件](#96-Streamlit-画面の最小要件)
-   - 9.7 [実装時の基本姿勢](#97-実装時の基本姿勢)
+   - 9.3 [ファイル名からの worker_name 抽出規則](#93-ファイル名からの-worker_name-抽出規則)
+   - 9.4 [worker_name 正規化ルール](#94-worker_name-正規化ルール)
+   - 9.5 [source_row_no の基点](#95-source_row_no-の基点)
+   - 9.6 [duplicate の扱い](#96-duplicate-の扱い)
+   - 9.7 [テストの期待値](#97-テストの期待値)
+   - 9.8 [Streamlit 画面の最小要件](#98-streamlit-画面の最小要件)
+   - 9.9 [実装時の基本姿勢](#99-実装時の基本姿勢)
 10. [アーキテクチャ図](#10-アーキテクチャ図)
    - 10.1 [入口と共通ロジックの分離](#101-入口と共通ロジックの分離)
    - 10.2 [本テーマでの実装ファイルとの対応](#102-本テーマでの実装ファイルとの対応)
@@ -170,6 +172,15 @@
 | `ingest_batch_id` | 取込実行ID | `VARCHAR(30)` |
 | `created_at` | reject 記録時間 | `TIMESTAMP DEFAULT CURRENT_TIMESTAMP` |
 
+#### `raw_payload_json` に含める内容
+
+`raw_payload_json` には、**元ファイルの対象行を key-value 形式で JSON 化した内容をそのまま保持**する。
+
+- 元行に存在した列は、採用列・捨て列を問わずすべて含める
+- 正規化後の中間データではなく、元入力行そのものを保持する
+- JSON 内のキー順は問わない
+- reject 調査時に元データを追跡できることを優先する
+
 #### reject 対象となる条件（入力不正）
 
 以下は **入力不正** として reject する（業務異常とは区別する）。
@@ -242,7 +253,14 @@ CREATE INDEX idx_work_log_order_process  ON work_log (order_no, process_name);
 
 ### 4.4 `ingest_batch_id` の生成ルール
 
-1回の取込実行を識別するIDとして、以下の形式を使用する。
+`ingest_batch_id` は **1ファイルの取込ごとに 1 つ採番**する。  
+1 回の CLI 実行で複数ファイルを処理する場合でも、ファイル単位で別 ID を付与する。
+
+- `internal_assembly_log.csv` → 別 `ingest_batch_id`
+- `external_assembly_log.csv` → 別 `ingest_batch_id`
+- `shipping_inspection_log.csv` → 別 `ingest_batch_id`
+
+ID 形式は以下を使用する。
 
 ```
 ING_YYYYMMDD_HH24MISS_連番
@@ -252,6 +270,8 @@ ING_YYYYMMDD_HH24MISS_連番
 
 ```
 ING_20260105_081530_001
+ING_20260105_081530_002
+ING_20260105_081530_003
 ```
 
 この形式により、同じファイルを再取込した場合でも別実行として識別でき、
@@ -259,6 +279,7 @@ ING_20260105_081530_001
 
 > **補足**: 実務では取込実行単位を管理する `import_run` テーブルを設けると便利だが、
 > 本テーマでは説明を簡潔にするため省略し、`ingest_batch_id` で代替する。
+> 連番はアプリケーション実行時に採番し、DB の永続通し番号までは要求しない。
 
 ---
 
@@ -721,6 +742,22 @@ results_record_db/
 | `streamlit_app.py` | Web 入口と KPI 表示。アップロードファイルを受け取り `ingest.py` を呼び出し、表示時は `db.py` を利用する。 |
 | `tests/` | 主に `ingest.py` と KPI 集計処理を検証する。 |
 
+#### DB 接続情報の扱い
+
+本テーマのコードは **セミナー用のローカル検証コード** として作成するため、  
+DB 接続情報は `db.py` にハードコードする。
+
+想定接続先:
+
+- PostgreSQL 18.3
+- ローカルホスト
+- DB 名: `results_record_db`
+- ロール名: `results_user`
+- パスワード: `results_pass`
+
+本実装は恒久運用を前提としない。セミナー終了後に DB リソースを削除する前提で扱う。
+Quick Start および Prompt Examples を作成する場合も、接続設定は環境変数ではなく `db.py` のハードコード前提で記載する。
+
 #### 実装上の原則
 
 - CLI と Web に業務ロジックを書かない。
@@ -744,6 +781,25 @@ results_record_db/
 | `work_sec > elapsed_sec` | reject |
 | `work_sec < 0` | reject |
 
+#### `work_sec` の跨日ルール
+
+`start_ts` と `end_ts` が日付をまたぐ場合でも、形式上は正常データとして扱う。  
+`work_sec` は期間全体を一括評価せず、**各日ごとに稼働時間帯（08:00〜12:00, 13:00〜17:00）のみを積算**して算出する。
+
+例:
+
+- `start_ts = 2026-01-05 16:50`
+- `end_ts   = 2026-01-06 08:10`
+
+この場合、
+
+- 2026-01-05 の `16:50〜17:00` = 600 秒
+- 2026-01-06 の `08:00〜08:10` = 600 秒
+
+合計 `work_sec = 1200` とする。
+
+ただし、`end_ts < start_ts` は reject とする。
+
 #### 具体例
 
 | start_ts | end_ts | elapsed_sec | work_sec | 理由 |
@@ -755,7 +811,31 @@ results_record_db/
 
 補足: 土日・祝日データは、本テーマでは原則サンプルに含めない。含まれた場合は reject ではなく `work_sec = 0` として扱ってもよいが、今回のサンプルでは非対象とする。
 
-### 9.3 `worker_name` 正規化ルール
+### 9.3 ファイル名からの `worker_name` 抽出規則
+
+内装組立・外装組立ログでは、`worker_name` はファイル名から抽出する。
+
+対象パターン:
+
+- `INTASM_YamadaTaro_202601.csv`
+- `EXTASM_SatoKen_202601.csv`
+
+正規表現:
+
+`^(INTASM|EXTASM)_([A-Za-z]+)_\\d{6}\\.csv$`
+
+抽出規則:
+
+- グループ 2 を `worker_name` とする
+
+例:
+
+- `INTASM_YamadaTaro_202601.csv` → `worker_name = YamadaTaro`
+- `EXTASM_SatoKen_202601.csv` → `worker_name = SatoKen`
+
+なお、出荷検査ログ（`SHIPCHK_202601.csv`）ではファイル名からは抽出せず、列 `inspector_name` を `worker_name` として使用する。
+
+### 9.4 `worker_name` 正規化ルール
 
 `worker_name` は題材上そのまま保持するが、表記ゆれは取込時に吸収する。  
 最低限、以下を実施する。
@@ -781,7 +861,19 @@ results_record_db/
 補足: 漢字名とローマ字名の完全統合までは本テーマでは扱わない。  
 ここを過度に広げると、題材の焦点が「名前マスタ整備」へ逸れるため。
 
-### 9.4 duplicate の扱い
+### 9.5 `source_row_no` の基点
+
+`source_row_no` は、**CSV / Excel ともに、ヘッダ行を除いたデータ行を 1 始まりで記録する**。  
+Excel 取込時も、先頭行をヘッダとして解釈した場合のデータ行番号を記録する。
+
+例:
+
+- ヘッダ直下の最初のデータ行 → `source_row_no = 1`
+- 2 行目のデータ行 → `source_row_no = 2`
+
+Python 実装上の 0 始まり index をそのまま記録せず、表示・保存時は 1 始まりへ変換する。
+
+### 9.6 duplicate の扱い
 
 本テーマでは、重複判定の業務キーは `UNIQUE (order_no, process_name)` とする。
 
@@ -797,7 +889,7 @@ results_record_db/
 - 2 回目以降の重複行は `work_log_reject` に記録される。
 - `ingest_batch_id` により、どの取込実行で発生した reject か追跡できる。
 
-### 9.5 テストの期待値
+### 9.7 テストの期待値
 
 サンプルデータを用いた最低限のテスト観点を以下に固定する。
 
@@ -821,10 +913,12 @@ results_record_db/
 補足: 厳密な件数期待値は、サンプル CSV 作成後に別ファイルへ固定してもよい。  
 本 README では、まず「何を確認すべきか」を固定する。
 
-### 9.6 Streamlit 画面の最小要件
+### 9.8 Streamlit 画面の最小要件
 
 本テーマの Streamlit 画面は、見栄えよりも **KPI が確認でき、説明できること** を優先する。
-BOP は Streamlit 内で以下の固定配列として扱う："内装組立", "外装組立", "出荷検査"
+BOP は Streamlit 内で  
+`["内装組立", "外装組立", "出荷検査"]`  
+の固定配列として扱う。
 作業者マスターはサンプルデータから事前生成した CSV を利用してよい
 
 #### 画面構成
@@ -854,7 +948,7 @@ BOP は Streamlit 内で以下の固定配列として扱う："内装組立", "
 
 補足: Streamlit の部品や装飾は自由だが、**フィルタ → 集計 → 表示 → CSV 出力** の流れが確認できることを優先する。
 
-### 9.7 実装時の基本姿勢
+### 9.9 実装時の基本姿勢
 
 本テーマでは、AI にコードを起こさせるが、以下を原則とする。
 
