@@ -132,6 +132,7 @@ results_record_db/
 | CLI と Web は入口だけにする | 業務ロジックを入口に書かない |
 | 共通化する | 判定・変換・reject 判定・DB 登録は共通関数に集約する |
 | DB 層を一元化する | DB 接続とモデル定義は SQLAlchemy で一本化する |
+| DB 接続情報は固定化する | 本テーマでは `db.py` に接続情報をハードコードする（セミナー用ローカル検証前提） |
 | Streamlit も同じ DB 層を使う | Streamlit から直接 SQL を書かない |
 | 論点を「仕様どおりか」に置く | 「1 発で生成できるか」ではなく仕様適合を重視する |
 
@@ -186,7 +187,12 @@ results_record_db/
 
 - SQLAlchemy を使う
 - work_log と work_log_reject をモデル定義する
-- 接続 URL は環境変数から受け取れるようにする
+- DB 接続情報は `db.py` にハードコードする
+  - host: `localhost`
+  - port: `5432`
+  - dbname: `results_record_db`
+  - user: `results_user`
+  - password: `results_pass`
 - セッション管理関数を持つ
 - PostgreSQL 18.3 を前提にする
 - モデル定義は README のカラム定義、制約、型に従う
@@ -216,9 +222,15 @@ results_record_db/
   - 外装組立ログ
   - 出荷検査ログ
 - README の採用列 / 捨て列 / 補完ルール / reject 条件に従う
+- 内装組立・外装組立の `worker_name` はファイル名正規表現 `^(INTASM|EXTASM)_([A-Za-z]+)_\\d{6}\\.csv$` のグループ2から抽出する
+- 出荷検査は `inspector_name` を `worker_name` として使用する
 - worker_name 正規化ルールに従う
 - work_sec の境界条件に従う
+- `work_sec` は跨日を許容し、各日ごとの稼働時間帯（08:00〜12:00, 13:00〜17:00）のみを積算する
 - duplicate は work_log に入れず、work_log_reject に DUPLICATE_KEY として残す
+- `source_row_no` はヘッダを除くデータ行の 1 始まりで記録する
+- `raw_payload_json` には元入力行の全列を key-value JSON で保持する（捨て列も含む）
+- `ingest_batch_id` は 1ファイル取込ごとに採番する
 - SQLAlchemy を使って DB へ登録する
 - CLI と Web の両方から呼べるように、入口依存の処理を書かない
 
