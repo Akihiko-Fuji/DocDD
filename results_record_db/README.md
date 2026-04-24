@@ -36,7 +36,7 @@
    - 7.3 [作成ステップ](#73-作成ステップ)
 8. [今後の作業](#8-今後の作業)
 9. [実装前提と補足仕様](#9-実装前提と補足仕様)
-   - 9.1 [実装前提](91-実装前提)
+   - 9.1 [実装前提](#91-実装前提)
    - 9.2 [work_sec 算出の境界条件](#92-work_sec-算出の境界条件)
    - 9.3 [worker_name 正規化ルール](#93-worker_name-正規化ルール)
    - 9.4 [duplicate の扱い](#94-duplicate-の扱い)
@@ -678,22 +678,17 @@ ORD-260106-002,VT-80X200-LG
 
 ### 9.1 実装前提
 
-| 項目 | 方針 |
-|---|---|
-| 想定 Python バージョン | Python 3.11 以上 |
-| 想定 DB | PostgreSQL 15 以上 |
-| 接続ドライバ | `psycopg`（SQLAlchemy 2 系を前提） |
-| DB アクセス | SQLAlchemy を使用 |
-| UI | Streamlit |
-| 取込入口 | CLI / Web の両対応 |
-| 中核方針 | 判定・変換・登録ロジックは共通化する |
+本テーマでは、CLI 入力と Web 入力（Streamlit）を両方扱う。  
+ただし、入口が違っても、判定・変換・reject 判定・DB 登録のロジックは共通化する。  
 
-#### 想定ディレクトリ構成
+今回の規模では、過度な分割は行わず、**責務が明確になる最小構成**を採用する。  
+
+#### ファイル構成
 
 ```text
 results_record_db/
 ├─ README.md
-├─ LOCAL_POSTGRESQL_SETUP.md
+├─ results_record_db_LOCAL_POSTGRESQL_SETUP.md
 ├─ ddl/
 │  └─ ddl_results_record_db.sql
 ├─ sample_data/
@@ -701,15 +696,33 @@ results_record_db/
 │  ├─ external_assembly/
 │  └─ shipping_inspection/
 ├─ src/
-│  ├─ ingest/
-│  │  ├─ common/
-│  │  ├─ cli/
-│  │  └─ web/
-│  └─ ui/
+│  ├─ ingest.py
+│  ├─ db.py
+│  ├─ ingest_cli.py
+│  └─ streamlit_app.py
 └─ tests/
+   ├─ test_ingest.py
+   ├─ test_duplicate.py
+   └─ test_kpi.py
 ```
 
-補足: ディレクトリ名は厳密固定ではないが、DDL / サンプルデータ / 取込処理 / UI / テスト を分離する方針とする。
+#### 各ファイルの責務
+
+| ファイル | 役割 |
+|---|---|
+| `ingest.py` | 共通取込ロジック。列マッピング、型変換、必須チェック、値域チェック、reject 判定、DB 登録を行う。 |
+| `db.py` | SQLAlchemy を利用した DB 接続、モデル定義、セッション管理を行う。 |
+| `ingest_cli.py` | CLI 入口。ファイルパスや入力元を受け取り、`ingest.py` を呼び出す。 |
+| `streamlit_app.py` | Web 入口と KPI 表示。アップロードファイルを受け取り `ingest.py` を呼び出し、表示時は `db.py` を利用する。 |
+| `tests/` | 主に `ingest.py` と KPI 集計処理を検証する。 |
+
+#### 実装上の原則
+
+- CLI と Web に業務ロジックを書かない。
+- 共通ロジックは `ingest.py` に集約する。
+- DB アクセスは `db.py` に集約する。
+- Streamlit も `db.py` を通じて PostgreSQL を利用する。
+- 入口は分けるが、判定基準は統一する。
 
 ### 9.2 `work_sec` 算出の境界条件
 
