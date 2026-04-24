@@ -25,13 +25,17 @@
 ## 1. PostgreSQL の導入
 
 PostgreSQL をローカル PC に導入します。Windows版は
+
 https://www.enterprisedb.com/downloads/postgres-postgresql-downloads
+
 からダウンロード可能です。今回は18.3を導入します。
 
 ### Windows の場合
 - 公式インストーラを利用して PostgreSQL をインストールする
 - インストール時に `postgres` 管理者パスワードを設定する
-- `psql` コマンドが利用できるように PATH を通すか、付属の SQL Shell を使う
+- `psql` コマンドが利用できるように  に PATH を通す、付属の SQL Shell を使う
+- インストール先を変更していない場合、PATH はシステム → システムの詳細設定 → PATHに `C:\Program Files\PostgreSQL\18\bin` を追加
+- スタックビルダは `psqlODBC x64` のみ導入
 
 ### Linux の場合（例: Debian / Ubuntu）
 ```bash
