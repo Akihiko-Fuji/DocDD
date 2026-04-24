@@ -11,7 +11,7 @@
 ## このドキュメントで固定すること
 
 - DB 製品: PostgreSQL
-- 想定バージョン: PostgreSQL 15 以上
+- 想定バージョン: PostgreSQL 18
 - 接続先: ローカルホスト
 - DB 名: `results_record_db`
 - ロール名: `results_user`
@@ -24,7 +24,9 @@
 
 ## 1. PostgreSQL の導入
 
-PostgreSQL をローカル PC に導入します。
+PostgreSQL をローカル PC に導入します。Windows版は
+https://www.enterprisedb.com/downloads/postgres-postgresql-downloads
+からダウンロード可能です。今回は18.3を導入します。
 
 ### Windows の場合
 - 公式インストーラを利用して PostgreSQL をインストールする
