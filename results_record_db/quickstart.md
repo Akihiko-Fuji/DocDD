@@ -149,30 +149,80 @@ results_record_db/
 
 ```
 あなたは PostgreSQL 18.3 向けの DDL を作成するエンジニアです。
-以下の README を一次情報として扱い、DDL を作成してください。
+`results_record_db/README.md` を一次情報（source of truth）として扱い、
+本テーマ用の DDL ファイル `ddl_results_record_db.sql` を作成してください。
 
-## 要件
+## 目的
+
+- `work_log`
+- `work_log_reject`
+
+の 2 テーブルを、README の定義どおりに PostgreSQL 18.3 向け DDL として作成する。
+
+## 最重要ルール
+
+- README を唯一の正とし、一般論で仕様を補わない
+- README に明示されていない要件を勝手に追加しない
+- 迷った場合は「README に書かれている内容を優先」する
+- 今回はセミナー用ローカル検証が目的なので、過度な汎用化をしない
+
+## 必須要件
 
 - PostgreSQL 方言で記述する
-- work_log と work_log_reject の 2 テーブルを作成する
-- work_log_id, reject_id は BIGSERIAL
-- created_at は TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-- UNIQUE (order_no, process_name) を含める
-- README に定義された CHECK 制約を含める
+- 出力ファイル名は `ddl_results_record_db.sql` を想定する
+- 作成対象は `work_log` と `work_log_reject` の 2 テーブルのみとする
+- `work_log_id`, `reject_id` は `BIGSERIAL`
+- `created_at` は `TIMESTAMP DEFAULT CURRENT_TIMESTAMP`
+- `work_log` に `UNIQUE (order_no, process_name)` を含める
+- README に定義された `CHECK` 制約を含める
 - 以下のインデックスを作成する
-  - (process_name, end_ts)
-  - (worker_name, end_ts)
-  - (order_no, process_name)
+  - `idx_work_log_process_end_ts` on `(process_name, end_ts)`
+  - `idx_work_log_worker_end_ts` on `(worker_name, end_ts)`
+  - `idx_work_log_order_process` on `(order_no, process_name)`
+
+## 型と列定義の扱い
+
+- 列名・型・VARCHAR 長は README の定義に厳密に従う
+- `raw_payload_json` は `TEXT` とする
+- `ingest_batch_id` は `VARCHAR(30)` とする
+- `result_cd`, `source_system`, `process_name` の許容値は README の定義に従う
+
+## 出力に含めてよいもの
+
+- `CREATE TABLE`
+- `PRIMARY KEY`
+- `UNIQUE`
+- `CHECK`
+- `CREATE INDEX`
+- 可読性のための最小限の SQL コメント
+
+## 出力に含めてはいけないもの
+
+- `DROP TABLE`
+- `DROP INDEX`
+- `IF EXISTS` を使った防御的削除
+- `INSERT` 文やサンプルデータ投入
+- `VIEW`, `MATERIALIZED VIEW`
+- `FUNCTION`, `PROCEDURE`, `TRIGGER`
+- `ENUM` 型の新設
+- `import_run` など README にない追加テーブル
+- 拡張機能の導入（`CREATE EXTENSION` など）
+- パーティション、監査テーブル追加、権限設定などの過剰実装
 
 ## 出力形式
 
-- 1 つの SQL ファイルとして、そのまま psql で実行できる形
-- コメントを適度に入れる
-- DROP は含めない
+- そのまま `psql` で実行できる 1 本の SQL とする
+- Markdown の説明文は不要
+- SQL コードのみを出力する
+- オブジェクト定義の順序は次を推奨する
+  1. `work_log`
+  2. `work_log_reject`
+  3. 制約（必要なら `CREATE TABLE` 内で定義）
+  4. インデックス
 
 ## 参照ドキュメント
 
-- results_record_db/README.md
+- `results_record_db/README.md`
 ```
 
 ---
