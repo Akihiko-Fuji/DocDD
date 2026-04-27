@@ -1,13 +1,14 @@
 # 描画設計 / Rendering Design
 
 - 文書ID: DOC-DSN-035
-- 最終更新日: 2026-03-24
+- 最終更新日: 2026-04-27
 - 関連文書:
   - `docs/02_external_spec/21_ui_screen_spec.md`
   - `docs/02_external_spec/23b_display_limits_spec.md`
   - `docs/03_internal_design/30_architecture_design.md`
   - `docs/03_internal_design/34_module_design.md`
   - `docs/03_internal_design/39_interface_contract.md`
+  - `docs/03_internal_design/35a_pygame_ce_viewmodel_items.md`
 
 ## 1. 目的
 UI 仕様で求める表示要素を、**添付の Game Boy 風参考画面を 640×576 に拡張した基準レイアウト**として、どの領域へ、どの優先度で、どの状態で表示するかを定義する。`34_module_design.md` が renderer の責務境界を扱うのに対し、本書は renderer が生成すべき view model の構造とレイアウト方針を扱う。
@@ -177,7 +178,14 @@ UI 仕様で求める表示要素を、**添付の Game Boy 風参考画面を 6
 - 文字間隔は可変にせず、**1 文字 32px の固定幅（fixed font）**で配置する
 - renderer の文字列描画入力は実行時に大文字へ正規化し、小文字入力が混在しても表示上は英大文字へ統一する
 
-## 9. 受入観点
+## 9. 言語別補助資料（pygame-ce）
+
+本書は言語非依存の描画設計正本である。Python / `pygame-ce` 実装時の画面別 ViewModel 項目の具体化は、補助資料 `35a_pygame_ce_viewmodel_items.md` を参照する。
+
+- 本書（DOC-DSN-035）: 言語非依存の責務境界・レイアウト方針
+- `35a_pygame_ce_viewmodel_items.md`（DOC-DSN-35A）: `pygame-ce` 向けの画面別項目展開
+
+## 10. 受入観点
 
 - `21_ui_screen_spec.md` の必須表示要素と状態ごとの表示責務が一致すること
 - 640×576 上で盤面、NEXT、SCORE、LINES、LEVEL が重ならずに配置できること

@@ -2,7 +2,7 @@
 
 - 文書ID: DOC-OVW-000
 - 文書名: 文書一覧 / Document Map
-- 最終更新日: 2026-04-16
+- 最終更新日: 2026-04-27
 - 対象プロジェクト: 仮称 `falling-block-puzzle`
 - 目的: 本プロジェクトで管理する文書の役割、参照順序、更新責任範囲を明確化する
 
@@ -149,7 +149,8 @@
 | `docs/03_internal_design/32_state_machine_design.md` | システム状態と遷移条件を定義する |
 | `docs/03_internal_design/33_data_model.md` | 内部データ・保存データ構造を定義する |
 | `docs/03_internal_design/34_module_design.md` | モジュール責務と内部契約を定義する |
-| `docs/03_internal_design/35_rendering_design.md` | 描画方式、再描画責務、視認性要件を定義する |
+| `docs/03_internal_design/35_rendering_design.md` | 描画方式、再描画責務、視認性要件を定義する（言語非依存正本） |
+| `docs/03_internal_design/35a_pygame_ce_viewmodel_items.md` | pygame-ce 実装向けに画面別 ViewModel 項目を補助定義する（言語別補助） |
 | `docs/03_internal_design/36_input_timing_design.md` | 入力受付タイミング、押下継続、リピート挙動を定義する |
 | `docs/03_internal_design/37_error_handling_policy.md` | 異常系ポリシーを定義する |
 | `docs/03_internal_design/38_runtime_state_transition_mermaid.md` | 状態遷移を Mermaid で可視化する |
