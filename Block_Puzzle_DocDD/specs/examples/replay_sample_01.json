@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "start_level": 0,
+  "randomizer_seed": 19890614,
+  "inputs": [
+    { "frame": 0, "buttons": ["START"] },
+    { "frame": 12, "buttons": ["Left"] },
+    { "frame": 18, "buttons": ["A"] },
+    { "frame": 32, "buttons": ["Down"] }
+  ]
+}
