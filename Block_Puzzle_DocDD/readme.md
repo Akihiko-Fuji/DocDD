@@ -116,13 +116,20 @@
 > - **文書管理の構造まで理解したい** → [4.2 文書体系を順に読むルート](#42-文書体系を順に読むルート)
 
 ### 4.1 最短ルート
-1. [docs/00_overview/00_document_map.md](docs/00_overview/00_document_map.md)
-2. [docs/00_overview/01_project_charter.md](docs/00_overview/01_project_charter.md)
-3. [docs/01_requirements/11_scope_definition.md](docs/01_requirements/11_scope_definition.md)
-4. [docs/01_requirements/16_traceability_matrix.md](docs/01_requirements/16_traceability_matrix.md)
-5. [docs/03_internal_design/34_module_design.md](docs/03_internal_design/34_module_design.md)
-6. [docs/04_quality_assurance/40_test_strategy.md](docs/04_quality_assurance/40_test_strategy.md)
-7. [docs/06_records/64_change_case_tspin_adoption.md](docs/06_records/64_change_case_tspin_adoption.md)
+1. [文書一覧 / Document Map](docs/00_overview/00_document_map.md)  
+   文書の全体配置と、各文書の役割を最初に把握するための入口です。
+2. [プロジェクト憲章 / Project Charter](docs/00_overview/01_project_charter.md)  
+   このサンプルの目的・範囲・前提を確認するための基準文書です。
+3. [スコープ定義 / Scope Definition](docs/01_requirements/11_scope_definition.md)  
+   「何を対象にし、何を対象外にするか」を明確にします。
+4. [追跡マトリクス / Traceability Matrix](docs/01_requirements/16_traceability_matrix.md)  
+   要求から設計・試験まで、つながり（追跡性）を確認できます。
+5. [モジュール設計 / Module Design](docs/03_internal_design/34_module_design.md)  
+   実装を始める前に、内部契約と責務分割を把握するための要点です。
+6. [試験戦略 / Test Strategy](docs/04_quality_assurance/40_test_strategy.md)  
+   どの観点で品質を保証するかを確認できます。
+7. [変更事例（T-Spin 採用）/ Change Case](docs/06_records/64_change_case_tspin_adoption.md)  
+   変更がどの文書へ波及するかを具体例で確認できます。
 
 ### 4.2 文書体系を順に読むルート
 1. [Overview（docs/00_overview）](docs/00_overview)
@@ -132,22 +139,35 @@
 5. [Quality Assurance（docs/04_quality_assurance）](docs/04_quality_assurance)
 6. [Records（docs/06_records）](docs/06_records)
 
+補足（初心者向け）:
+- フォルダ単位で読むときは、まず各フォルダ内の番号が若い文書（例: `00`, `01`, `11`）から読むと流れを追いやすくなります。
+
 ---
 
 ## 5. コア 10 文書
 
 本サンプルでは、以下を **DocDD 骨格を支えるコア 10 文書**として扱います。
 
-1. [docs/00_overview/00_document_map.md](docs/00_overview/00_document_map.md)
-2. [docs/00_overview/01_project_charter.md](docs/00_overview/01_project_charter.md)
-3. [docs/01_requirements/11_scope_definition.md](docs/01_requirements/11_scope_definition.md)
-4. [docs/01_requirements/13_functional_requirements.md](docs/01_requirements/13_functional_requirements.md)
-5. [docs/01_requirements/14_non_functional_requirements.md](docs/01_requirements/14_non_functional_requirements.md)
-6. [docs/02_external_spec/20_game_rules_spec.md](docs/02_external_spec/20_game_rules_spec.md)
-7. [docs/02_external_spec/21_ui_screen_spec.md](docs/02_external_spec/21_ui_screen_spec.md)
-8. [docs/02_external_spec/24_piece_rotation_collision_spec.md](docs/02_external_spec/24_piece_rotation_collision_spec.md)
-9. [docs/03_internal_design/32_state_machine_design.md](docs/03_internal_design/32_state_machine_design.md)
-10. [docs/04_quality_assurance/40_test_strategy.md](docs/04_quality_assurance/40_test_strategy.md)
+1. [文書一覧 / Document Map](docs/00_overview/00_document_map.md)  
+   全文書の地図。迷ったときの起点です。
+2. [プロジェクト憲章 / Project Charter](docs/00_overview/01_project_charter.md)  
+   プロジェクトの目的・前提・進め方を定義します。
+3. [スコープ定義 / Scope Definition](docs/01_requirements/11_scope_definition.md)  
+   対象範囲と非対象を明文化します。
+4. [機能要件 / Functional Requirements](docs/01_requirements/13_functional_requirements.md)  
+   必要な機能を要求として定義します。
+5. [非機能要件 / Non-Functional Requirements](docs/01_requirements/14_non_functional_requirements.md)  
+   性能・保守性・運用性など品質面の要求を定義します。
+6. [ゲームルール仕様 / Game Rules Spec](docs/02_external_spec/20_game_rules_spec.md)  
+   ゲームとしての振る舞いを外部仕様として記述します。
+7. [画面仕様 / UI Screen Spec](docs/02_external_spec/21_ui_screen_spec.md)  
+   画面構成や表示要素を確認できます。
+8. [回転・衝突仕様 / Rotation & Collision Spec](docs/02_external_spec/24_piece_rotation_collision_spec.md)  
+   ピース挙動の重要ルールを定義します。
+9. [状態機械設計 / State Machine Design](docs/03_internal_design/32_state_machine_design.md)  
+   内部状態遷移を設計として明示します。
+10. [試験戦略 / Test Strategy](docs/04_quality_assurance/40_test_strategy.md)  
+   検証方針とテスト観点の基準を示します。
 
 この 10 文書を起点に、追加文書で詳細化・補助・記録を行います。
 
