@@ -22,7 +22,7 @@
 
 | ファイル | 役割 |
 |---|---|
-| `01_script.md` | セミナー本編の台本（スライド進行・説明内容） |
+| [01_script.md](https://github.com/Akihiko-Fuji/DocDD/blob/main/seminars/01_script.md) | セミナー本編の台本（スライド進行・説明内容） |
 | `README.md` | 本ファイル（台本の補助説明） |
 
 ---
