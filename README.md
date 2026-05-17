@@ -26,7 +26,7 @@
 
 ## このリポジトリの位置づけ
 
-このリポジトリでは、[`seminars/`](./seminars/) 配下のセミナー資料を中心に、  
+この[リポジトリ](https://ja.wikipedia.org/wiki/%E3%83%AA%E3%83%9D%E3%82%B8%E3%83%88%E3%83%AA)では、[`seminars/`](./seminars/) 配下のセミナー資料を中心に、  
 2つの教材を使って説明を行います。
 
 ### 1. [`results_record_db/`](./results_record_db/)
