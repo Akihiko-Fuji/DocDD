@@ -154,7 +154,7 @@
 | `docs/03_internal_design/36_input_timing_design.md` | 入力受付タイミング、押下継続、リピート挙動を定義する |
 | `docs/03_internal_design/37_error_handling_policy.md` | 異常系ポリシーを定義する |
 | `docs/03_internal_design/38_runtime_state_transition_mermaid.md` | 状態遷移を Mermaid で可視化する |
-| `docs/03_internal_design/39_interface_contract.md` | モジュール間のデータ契約と前後条件を一覧化する |
+| `docs/03_internal_design/39_interface_contract.md` | モジュール間のデータコントラクトと前後条件を一覧化する |
 
 ### 6.5 Quality Assurance
 
