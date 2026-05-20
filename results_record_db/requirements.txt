@@ -1,0 +1,7 @@
+pandas
+sqlalchemy
+psycopg[binary]
+streamlit
+altair
+openpyxl
+pytest
