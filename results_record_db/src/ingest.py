@@ -35,7 +35,7 @@ from sqlalchemy.orm import Session
 from db import WorkLog, WorkLogReject
 
 FILENAME_WORKER_RE = re.compile(
-    r"^(INTASM|EXTASM)_([^_]+)_\d{6}(?:\d{2})?\.(csv|xlsx|xlsm)$"
+    r"^(INTASM|EXTASM)(?:_[^_]+)?_([^_]+)_\d{6}(?:\d{2})?\.(csv|xlsx|xlsm)$"
 )
 HOLIDAYS = {
     date(2026, 1, 12)
@@ -692,6 +692,7 @@ def apply_ingest_plan(session: Session, plan: IngestPlan) -> IngestResult:
             )
         )
     session.flush()
+    session.commit()
     return IngestResult(
         source_file_name=plan.source_file_name,
         ingest_batch_id=plan.ingest_batch_id,
