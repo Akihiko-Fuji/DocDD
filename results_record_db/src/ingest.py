@@ -35,7 +35,8 @@ from sqlalchemy.orm import Session
 from db import WorkLog, WorkLogReject
 
 FILENAME_WORKER_RE = re.compile(
-    r"^(INTASM|EXTASM)(?:_[^_]+)?_([^_]+)_\d{6}(?:\d{2})?\.(csv|xlsx|xlsm)$"
+    r"^(INTASM)_([^_]+)_\d{6}(?:\d{2})?\.(csv|xlsx|xlsm)$"
+    r"|^(EXTASM)(?:_[^_]+)?_([^_]+)_\d{6}(?:\d{2})?\.(csv|xlsx|xlsm)$"
 )
 HOLIDAYS = {
     date(2026, 1, 12)
@@ -334,7 +335,12 @@ def prepare_ingest_file(
     file_prefix = None
     file_worker = None
     if m:
-        file_prefix, file_worker = m.group(1), normalize_worker_name(m.group(2))
+        if m.group(1):
+            file_prefix = m.group(1)
+            file_worker = normalize_worker_name(m.group(2))
+        else:
+            file_prefix = m.group(4)
+            file_worker = normalize_worker_name(m.group(5))
 
     normalized_name = fp.name.lower()
     if (
