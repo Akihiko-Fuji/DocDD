@@ -48,6 +48,8 @@
 10. [アーキテクチャ図](#10-アーキテクチャ図)
    - 10.1 [入口と共通ロジックの分離](#101-入口と共通ロジックの分離)
    - 10.2 [本テーマでの実装ファイルとの対応](#102-本テーマでの実装ファイルとの対応)
+   - 10.3 [業務工程の流れ](#103-業務工程の流れ)
+   - 10.4 [CLI/WebUI から見える状態までの流れ](#104-cliwebui-から見える状態までの流れ)
 11. [用語集](#11-用語集)
    - 11.1 [本テーマで特に重要な用語](#111-本テーマで特に重要な用語)
 
@@ -1253,6 +1255,71 @@ Web 入力  ─┘
 | 表示層 | KPI 集計、グラフ表示、CSV 出力 | `src/streamlit_app.py` |
 
 補足: 本テーマはセミナー題材のため、責務を明確にしつつ、過度なファイル分割は行わない。
+
+
+### 10.3 業務工程の流れ
+
+本テーマで扱う業務上の工程は、BOP として **内装組立 → 外装組立 → 出荷検査** の固定順とする。  
+各工程は別々のツール・帳票からログを出力するが、`order_no` をキーに同一製番の工程進捗として結び付ける。
+
+```mermaid
+flowchart LR
+    order["受注 / 製番発行<br/>order_no"] --> internal["内装組立<br/>設備生ログ<br/>INTASM_*.csv"]
+    internal --> external["外装組立<br/>実績ログ<br/>EXTASM_*.csv"]
+    external --> inspection["出荷検査<br/>検査ログ<br/>SHIPCHK_*.csv"]
+    inspection --> shipped["出荷可能状態"]
+
+    internal -. 完了時刻 end_ts .-> kpi2a["工程間滞留<br/>内装 → 外装"]
+    external -. 完了時刻 end_ts .-> kpi2a
+    external -. 完了時刻 end_ts .-> kpi2b["工程間滞留<br/>外装 → 出荷"]
+    inspection -. 完了時刻 end_ts .-> kpi2b
+```
+
+この図で重要なのは、ログの入力順ではなく、**業務上の工程順**と**工程完了時刻 `end_ts`** を基準に KPI を評価する点である。  
+特に KPI2 は、前工程が完了し、次工程が未完了の時間帯を工程間滞留として数える。
+
+### 10.4 CLI/WebUI から見える状態までの流れ
+
+CLI と WebUI は入口が異なるだけで、どちらも共通取込処理を経由して `work_log` / `work_log_reject` に反映する。  
+その後、Streamlit が DB を読み込み、フィルタ・グラフ・詳細表・CSV 出力としてユーザーに見える状態にする。
+
+```mermaid
+flowchart TD
+    subgraph Input["入力入口"]
+        cli["CLI<br/>src/ingest_cli.py<br/>定時バッチ・一括取込"]
+        web_import["WebUI: Import タブ<br/>src/streamlit_app.py<br/>手動アップロード"]
+    end
+
+    cli --> core["共通取込処理<br/>src/ingest.py"]
+    web_import --> preview["検証・プレビュー<br/>prepare_ingest_file"]
+    preview --> register["DBへ登録<br/>登録直前に再検証"]
+    register --> core
+
+    subgraph Core["共通取込処理の主な責務"]
+        core --> detect["ファイル種別判定<br/>INTASM / EXTASM / SHIPCHK"]
+        detect --> map["列マッピング・補完<br/>product_name / worker_name 等"]
+        map --> validate["型変換・必須チェック・値域チェック"]
+        validate --> calc["elapsed_sec / work_sec 計算"]
+        calc --> split{"正常行か?"}
+    end
+
+    split -- "正常" --> work_log[("PostgreSQL<br/>work_log")]
+    split -- "不正・重複" --> reject[("PostgreSQL<br/>work_log_reject")]
+
+    work_log --> load["Streamlit DB読込<br/>期間・工程・作業者フィルタ"]
+    reject --> import_result["Import タブ<br/>Reject候補・登録結果・理由確認"]
+    load --> kpi1["KPI1<br/>工程別時間別 作業件数"]
+    load --> kpi2["KPI2<br/>工程間滞留 15分足"]
+    load --> kpi3["KPI3<br/>作業者別日別実績"]
+    kpi1 --> visible["ユーザーから見える状態<br/>グラフ / 詳細表 / CSV出力"]
+    kpi2 --> visible
+    kpi3 --> visible
+    import_result --> visible
+```
+
+WebUI では、登録前に「検証・プレビュー」を表示し、登録直前にも同一アップロード内容で再検証する。  
+これにより、画面で見た取込候補・Reject候補と、DB 登録時の判定がずれないようにする。
+
 
 ## 11. 用語集
 
