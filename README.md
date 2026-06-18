@@ -61,11 +61,10 @@ DocDDでは、これらを要求、仕様、設計、試験、変更記録とし
 はじめて見る方は、まず [`START_HERE.md`](./START_HERE.md) を参照してください。
 以下の順でクリックして読んでいただくと、全体像を把握しやすくなります。
 
-1. セミナー資料の入口：[`seminars/`](./seminars/)
-2. 主教材のREADME：[`results_record_db/README.md`](./results_record_db/README.md)
-3. 主教材の環境構築：[`results_record_db/results_record_db_LOCAL_POSTGRESQL_SETUP.md`](./results_record_db/results_record_db_LOCAL_POSTGRESQL_SETUP.md)
-4. 補助教材のREADME：[`Block_Puzzle_DocDD/readme.md`](./Block_Puzzle_DocDD/readme.md)
-5. 文書対応マップ：[`Block_Puzzle_DocDD/docs/00_overview/00_document_map.md`](./Block_Puzzle_DocDD/docs/00_overview/00_document_map.md)
+1. 主教材のREADME：[`results_record_db/README.md`](./results_record_db/README.md)
+2. 主教材の環境構築：[`results_record_db/results_record_db_LOCAL_POSTGRESQL_SETUP.md`](./results_record_db/results_record_db_LOCAL_POSTGRESQL_SETUP.md)
+3. 補助教材のREADME：[`Block_Puzzle_DocDD/readme.md`](./Block_Puzzle_DocDD/readme.md)
+4. 文書対応マップ：[`Block_Puzzle_DocDD/docs/00_overview/00_document_map.md`](./Block_Puzzle_DocDD/docs/00_overview/00_document_map.md)
 
 ---
 
