@@ -17,7 +17,7 @@
 
 生成AIの登場によって、この抽象化がさらに一段上へ広がりつつあります。
 
-<img width="1024" height="371" alt="z_名称未設定 1" src="https://github.com/user-attachments/assets/d96b7948-40fb-475f-b907-7538f7b194b4" />
+<img width="1024" height="371" alt="生成AI以前と生成AI以降のソフトウェア開発における抽象化階層の比較" src="https://github.com/user-attachments/assets/d96b7948-40fb-475f-b907-7538f7b194b4" />
 
 
 従来、コード実装の段階で人が直接記述していた中心は、Python、Java、C++などの高水準言語でした。
