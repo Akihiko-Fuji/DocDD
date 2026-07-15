@@ -365,6 +365,10 @@ INTASM_YamadaTaro_202601.csv
 
 > `product_name` は補助マスタ（`order_product_master.csv`）から `order_no` をキーに補完する。
 
+### データサンプル
+[sample_data/INTASM_HanaYamada_202601.csv](https://github.com/Akihiko-Fuji/DocDD/blob/main/results_record_db/sample_data/INTASM_HanaYamada_202601.csv)
+
+
 #### reject 条件
 
 - `order_no` が空
@@ -446,6 +450,10 @@ EXTASM_SatoKen_202601.csv
 | 捨て列 | `process_count1` 〜 `process_count12` | なし | KPI に未使用 |
 | 捨て列 | `qr_clear_count` / `initial_clear_count` / `forced_clear_count` / `material_pick_count` | なし | KPI に未使用 |
 
+### データサンプル
+[sample_data/EXTASM_MunekiYoshimura_202601.csv](https://github.com/Akihiko-Fuji/DocDD/blob/main/results_record_db/sample_data/EXTASM_MunekiYoshimura_202601.csv)
+
+
 #### reject 条件
 
 - `order_no` が空
@@ -512,6 +520,11 @@ SHIPCHK_202601.csv
 | 捨て列 | `tehai_no` | なし | 今回の主表では保持しない |
 | 捨て列 | `work_minutes` | なし | `start_ts` / `end_ts` から再計算可能 |
 | 捨て列 | `bottom_ng_count` / `slat_ng_count` / `balance_ng_count` | なし | `result_cd` 丸め後は未使用 |
+
+
+### データサンプル
+[sample_data/SHIPCHK_202601.csv](https://github.com/Akihiko-Fuji/DocDD/blob/main/results_record_db/sample_data/SHIPCHK_202601.csv)
+
 
 #### reject 条件
 
