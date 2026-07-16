@@ -151,11 +151,14 @@ def normalize_worker_name(name: Optional[str]) -> str:
 
 
 def normalize_order_no(order_no: Optional[str]) -> str:
-    """受注番号を比較・保存用に正規化する(英数字以外を除去し大文字化)。"""
+    """受注番号の前後空白だけを除去する。
+
+    ハイフンや英字の大文字・小文字は業務キーの一部として保持する。
+    記号除去で異なる受注番号を同一視しないための仕様である。
+    """
     if order_no is None:
         return ""
-    txt = str(order_no).strip().upper()
-    return re.sub(r"[^A-Z0-9]", "", txt)
+    return str(order_no).strip()
 
 
 def calc_work_sec(start_ts: datetime, end_ts: datetime) -> int:
@@ -404,7 +407,7 @@ def prepare_ingest_file(
 
         if log_type == "internal":
             process_name, source_system = PROCESS_BY_PREFIX["INTASM"]
-            order_no = raw.get("order_no", "").strip()
+            order_no = normalize_order_no(raw.get("order_no", ""))
             if not order_no:
                 reject_row(REJECT_MISSING_REQUIRED, "order_no is empty", source_system)
                 continue
@@ -471,7 +474,7 @@ def prepare_ingest_file(
             result_cd = "OK"
         elif log_type == "external":
             process_name, source_system = PROCESS_BY_PREFIX["EXTASM"]
-            order_no = raw.get("order_no", "").strip()
+            order_no = normalize_order_no(raw.get("order_no", ""))
             product_name = raw.get("product_name", "").strip()
             if not order_no or not product_name:
                 reject_row(
@@ -523,7 +526,7 @@ def prepare_ingest_file(
             result_cd = "OK"
         else:
             process_name, source_system = "出荷検査", "shipping_inspection_tool"
-            order_no = raw.get("order_no", "").strip()
+            order_no = normalize_order_no(raw.get("order_no", ""))
             product_name = raw.get("product_name", "").strip()
             inspector = normalize_worker_name(raw.get("inspector_name", ""))
             if not order_no or not product_name or not inspector:

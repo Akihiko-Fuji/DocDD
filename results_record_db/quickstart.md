@@ -95,14 +95,15 @@ psql -U results_user -d results_record_db -f results_record_db/ddl/ddl_results_r
 
 #### Step 2 — Python 実行環境を準備する
 
-`results_record_db` 配下で仮想環境を作成し、依存を導入する。
+Python 3.11以上を使用する。`results_record_db` 配下で仮想環境を作成し、
+依存は `requirements.txt` からまとめて導入する。
 
 ```bash
 cd results_record_db
 python -m venv .venv
 source .venv/bin/activate
-pip install -U pip
-pip install pandas sqlalchemy "psycopg[binary]" streamlit pytest openpyxl
+python -m pip install -U pip
+python -m pip install -r requirements.txt
 ```
 
 #### Step 3 — Python ファイルの役割を把握する
@@ -136,7 +137,11 @@ python src/ingest_cli.py sample_data/EXTASM_ShuheiYamashita_202601.csv
 python src/ingest_cli.py sample_data/SHIPCHK_202601.csv
 ```
 
-異常データの動きも見たい場合は、`sample_data/*_invalid.csv` 系のサンプルを使って同様に実行する。
+異常データの動きも見たい場合は、次の3ファイルを同様に実行する。
+
+- `sample_data/INTASM_HanaYamadaInvalid_202601.csv`
+- `sample_data/EXTASM_MunekiYoshimuraInvalid_202601.csv`
+- `sample_data/SHIPCHK_202601_invalid.csv`
 
 invalid サンプルはデモ説明しやすいよう、**1行1不正** で作成している。各レコードの意図は次のとおり。
 
@@ -336,7 +341,7 @@ results_record_db/
 ### 2.2 SQLAlchemy モデル作成用プロンプト
 
 ```
-あなたは Python 3.9+ と SQLAlchemy 2 系で PostgreSQL 18.3 に接続するコードを書くエンジニアです。
+あなたは Python 3.11+ と SQLAlchemy 2 系で PostgreSQL 18.3 に接続するコードを書くエンジニアです。
 以下の README を一次情報として扱い、src/db.py を作成してください。
 
 ## 要件
@@ -368,7 +373,7 @@ results_record_db/
 ### 2.3 共通取込処理作成用プロンプト
 
 ```
-あなたは Python 3.9+ で CSV / Excel 取込処理を書くエンジニアです。
+あなたは Python 3.11+ で CSV / Excel 取込処理を書くエンジニアです。
 以下の README を一次情報として扱い、src/ingest.py を作成してください。
 
 ## 要件
@@ -378,7 +383,8 @@ results_record_db/
   - 外装組立ログ
   - 出荷検査ログ
 - README の採用列 / 捨て列 / 補完ルール / reject 条件に従う
-- 内装組立・外装組立の `worker_name` はファイル名正規表現 `^(INTASM|EXTASM)_([A-Za-z]+)_\\d{6}\\.(csv|xlsx|xlsm)$` のグループ2から抽出する
+- 内装組立・外装組立の `worker_name` は、READMEのファイル名規則に従って抽出する
+- 英字名・日本語名、外装組立の任意ライン識別子、年月6桁または年月日8桁を扱う
 - 出荷検査は `inspector_name` を `worker_name` として使用する
 - worker_name 正規化ルールに従う
 - work_sec の境界条件に従う
@@ -404,7 +410,7 @@ results_record_db/
 ### 2.4 CLI 入口作成用プロンプト
 
 ```
-あなたは Python 3.9+ で CLI ツールを書くエンジニアです。
+あなたは Python 3.11+ で CLI ツールを書くエンジニアです。
 src/ingest.py を呼び出すための最小 CLI 入口を src/ingest_cli.py として作成してください。
 
 ## 要件
@@ -435,6 +441,7 @@ src/ingest.py を呼び出すための最小 CLI 入口を src/ingest_cli.py と
 - 滞留は以下の 2 区間を扱う
   - 内装組立 → 外装組立
   - 外装組立 → 出荷検査
+- 工程間滞留は前工程の完了から次工程の開始までとし、次工程で作業中の製番は含めない
 - 作業者一覧は work_log の実績データから抽出する
 - 画面装飾は最小でよい
 - SQLAlchemy 経由で DB に接続する

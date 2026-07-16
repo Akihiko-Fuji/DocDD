@@ -225,13 +225,13 @@ python -m pip install -r requirements.txt
 `requirements.txt` でインストールできない場合は、必要なライブラリを個別に入れます。
 
 ```powershell
-py -m pip install pandas sqlalchemy "psycopg[binary]" streamlit pytest openpyxl
+py -m pip install -r requirements.txt
 ```
 
 または、
 
 ```powershell
-python -m pip install pandas sqlalchemy "psycopg[binary]" streamlit pytest openpyxl
+python -m pip install -r requirements.txt
 ```
 
 ---

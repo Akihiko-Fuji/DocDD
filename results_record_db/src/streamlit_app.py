@@ -173,15 +173,13 @@ def build_kpi2(
     if df.empty:
         empty = pd.DataFrame(columns=["pair", "timestamp", "stagnation_count"])
         return empty, pd.DataFrame(
-            columns=["order_no", "pair", "from_end", "to_end", "is_invalid_sequence"]
+            columns=["order_no", "pair", "from_end", "to_start", "is_invalid_sequence"]
         )
 
     trend_rows = []
     detail_rows = []
     period_start_ts = pd.Timestamp(start_date)
-    period_end_ts = (
-        pd.Timestamp(end_date) + pd.Timedelta(days=1) - pd.Timedelta(minutes=15)
-    )
+    period_end_ts = pd.Timestamp(f"{end_date.isoformat()} 23:45:00")
     scoped_from_df = df[df["end_ts"] <= period_end_ts].copy()
     all_buckets = pd.date_range(start=period_start_ts, end=period_end_ts, freq="15min")
     buckets = [ts for ts in all_buckets if 8 <= ts.hour < 17]
@@ -192,54 +190,30 @@ def build_kpi2(
         ].rename(columns={"end_ts": "from_end"})
         if from_df.empty:
             continue
-        to_df = df[df["process_name"] == to][["order_no", "end_ts"]].rename(
-            columns={"end_ts": "to_end"}
+        to_df = df[df["process_name"] == to][["order_no", "start_ts"]].rename(
+            columns={"start_ts": "to_start"}
         )
-
-        # 注文ごとに前工程完了時刻ごとの「次工程の最初の完了時刻」を対応付ける。
-        # 単純な結合だと同一 order_no の複数レコードが直積になり、滞留件数を過大計上する。
         tmp = from_df.merge(to_df, on="order_no", how="left")
-        tmp["is_invalid_sequence"] = tmp["to_end"].notna() & (
-            tmp["to_end"] < tmp["from_end"]
+        tmp["is_invalid_sequence"] = tmp["to_start"].notna() & (
+            tmp["to_start"] < tmp["from_end"]
         )
-
-        # 想定: 現実データでは「前工程の入力遅延/漏れ」「端末時刻ズレ」等により、
-        # 同一 order_no で to_end < from_end の行が混在し得る。
-        # そのため前工程完了 from_end ごとに「from_end 以降で最も早い to_end」を採用し、
-        # KPI2 の滞留カウントは正しい遷移で計算する。
-        # なお、to_end < from_end の存在自体は監査情報として is_invalid_sequence に残す。
-        grouped = []
-        for (order_no, from_end), grp in tmp.groupby(
-            ["order_no", "from_end"], dropna=False
-        ):
-            valid_to = grp.loc[grp["to_end"] >= from_end, "to_end"].min()
-            has_invalid = bool((grp["to_end"] < from_end).any())
-            grouped.append(
-                {
-                    "order_no": order_no,
-                    "from_end": from_end,
-                    "to_end": valid_to if pd.notna(valid_to) else pd.NaT,
-                    "is_invalid_sequence": has_invalid,
-                }
-            )
-        tmp = pd.DataFrame(grouped)
         tmp["pair"] = f"{frm} → {to}"
 
         tmp = tmp[
             (tmp["from_end"] <= period_end_ts)
-            & ((tmp["to_end"].isna()) | (tmp["to_end"] >= period_start_ts))
+            & ((tmp["to_start"].isna()) | (tmp["to_start"] >= period_start_ts))
         ].copy()
         if tmp.empty:
             continue
         detail_rows.append(
-            tmp[["order_no", "pair", "from_end", "to_end", "is_invalid_sequence"]]
+            tmp[["order_no", "pair", "from_end", "to_start", "is_invalid_sequence"]]
         )
 
         valid_tmp = tmp[~tmp["is_invalid_sequence"]].copy()
         for ts in buckets:
             count = (
                 (valid_tmp["from_end"] <= ts)
-                & ((valid_tmp["to_end"].isna()) | (valid_tmp["to_end"] > ts))
+                & ((valid_tmp["to_start"].isna()) | (valid_tmp["to_start"] > ts))
             ).sum()
             trend_rows.append(
                 {
@@ -258,7 +232,7 @@ def build_kpi2(
         pd.concat(detail_rows, ignore_index=True)
         if detail_rows
         else pd.DataFrame(
-            columns=["order_no", "pair", "from_end", "to_end", "is_invalid_sequence"]
+            columns=["order_no", "pair", "from_end", "to_start", "is_invalid_sequence"]
         )
     )
     return trend, detail
@@ -433,7 +407,7 @@ def _run_kpi2_tab(base_df: pd.DataFrame, start_date: date, end_date: date) -> No
     """KPI2 タブを描画する。"""
     st.subheader("KPI2 工程間滞留（15分足の仕掛り推移）")
     st.info(
-        "工程間滞留は、前工程完了〜後工程完了の間にある仕掛り件数を15分足で可視化します（8:00〜17:00）。"
+        "工程間滞留は、前工程完了〜次工程開始までの未着手件数を15分足で可視化します（8:00〜17:00）。"
     )
     trend, detail = build_kpi2(base_df, start_date, end_date)
     if not trend.empty:

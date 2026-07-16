@@ -1,10 +1,10 @@
 order_no,product_name,process_name,worker_name,start_ts,end_ts,elapsed_sec,work_sec,result_cd,source_system,source_file_name
-ORD-260105-001,RS-90X180-WH,内装組立,山田太郎,2026-01-05 08:12:10,2026-01-05 08:24:40,750,750,OK,internal_assembly_tool,INTASM_YamadaTaro_202601.csv
-ORD-260105-002,RS-120X200-GY,内装組立,山田太郎,2026-01-05 08:28:05,2026-01-05 08:43:15,910,910,OK,internal_assembly_tool,INTASM_YamadaTaro_202601.csv
-ORD-260105-003,VB-50-80X150-IV,内装組立,山田太郎,2026-01-05 08:47:20,2026-01-05 09:05:00,1060,1060,OK,internal_assembly_tool,INTASM_YamadaTaro_202601.csv
-ORD-260105-001,RS-90X180-WH,外装組立,佐藤健,2026-01-05 09:18:10,2026-01-05 09:33:20,910,910,OK,external_assembly_tool,EXTASM_SatoKen_202601.csv
-ORD-260105-002,RS-120X200-GY,外装組立,佐藤健,2026-01-05 09:37:40,2026-01-05 09:54:10,990,990,OK,external_assembly_tool,EXTASM_SatoKen_202601.csv
-ORD-260105-003,VB-50-80X150-IV,外装組立,佐藤健,2026-01-05 10:02:05,2026-01-05 10:20:25,1100,1100,OK,external_assembly_tool,EXTASM_SatoKen_202601.csv
-ORD-260105-001,RS-90X180-WH,出荷検査,鈴木ミカ,2026-01-05 10:05:00,2026-01-05 10:14:00,540,540,OK,shipping_inspection_tool,SHIPCHK_202601.csv
-ORD-260105-002,RS-120X200-GY,出荷検査,鈴木ミカ,2026-01-05 10:18:00,2026-01-05 10:28:00,600,600,OK,shipping_inspection_tool,SHIPCHK_202601.csv
-ORD-260105-003,VB-50-80X150-IV,出荷検査,鈴木ミカ,2026-01-05 10:34:00,2026-01-05 10:46:00,720,720,OK,shipping_inspection_tool,SHIPCHK_202601.csv
+ORD-260105-001,RS-90X180-WH,内装組立,HanaYamada,2026-01-05 08:00:00,2026-01-05 08:02:35,155,155,OK,internal_assembly_tool,INTASM_HanaYamada_202601.csv
+ORD-260105-001,RS-90X180-WH,外装組立,ShuheiYamashita,2026-01-05 08:17:35,2026-01-05 08:20:40,185,185,OK,external_assembly_tool,EXTASM_ShuheiYamashita_202601.csv
+ORD-260105-001,RS-90X180-WH,出荷検査,加藤葵,2026-01-05 08:32:40,2026-01-05 08:39:53,433,433,OK,shipping_inspection_tool,SHIPCHK_202601.csv
+ORD-260105-002,RS-120X200-GY,内装組立,KentoTakahashi,2026-01-05 08:00:00,2026-01-05 08:02:22,142,142,OK,internal_assembly_tool,INTASM_KentoTakahashi_202601.csv
+ORD-260105-002,RS-120X200-GY,外装組立,ToshioAndo,2026-01-05 08:12:22,2026-01-05 08:16:06,224,224,OK,external_assembly_tool,EXTASM_ToshioAndo_202601.csv
+ORD-260105-002,RS-120X200-GY,出荷検査,田中玲,2026-01-05 08:38:06,2026-01-05 08:41:50,224,224,OK,shipping_inspection_tool,SHIPCHK_202601.csv
+ORD-260105-003,VB-50-80X150-IV,内装組立,HanaYamada,2026-01-05 08:02:42,2026-01-05 08:05:08,146,146,OK,internal_assembly_tool,INTASM_HanaYamada_202601.csv
+ORD-260105-003,VB-50-80X150-IV,外装組立,ToshioAndo,2026-01-05 08:16:20,2026-01-05 08:19:58,218,218,OK,external_assembly_tool,EXTASM_ToshioAndo_202601.csv
+ORD-260105-003,VB-50-80X150-IV,出荷検査,小林陽,2026-01-05 08:32:58,2026-01-05 08:38:01,303,303,OK,shipping_inspection_tool,SHIPCHK_202601.csv

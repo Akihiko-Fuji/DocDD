@@ -47,8 +47,8 @@ def test_kpi2_returns_both_stagnation_pairs() -> None:
 
 def test_kpi2_long_stagnation_is_counted_across_multiple_buckets() -> None:
     df = _df()
-    # O3 は 08:00 に内装完了し、外装完了は 10:00。
-    # 08:00 〜 09:45 の各15分バケットで滞留として継続カウントされることを確認する。
+    # O3 は 08:00 に内装完了し、外装開始は 09:30。
+    # 08:00 〜 09:15 の各15分バケットで滞留として継続カウントされることを確認する。
     extra = pd.DataFrame([
         {"order_no":"O3","product_name":"P3","process_name":"内装組立","worker_name":"W1","start_ts":datetime(2026,1,5,7,30),"end_ts":datetime(2026,1,5,8,0),"elapsed_sec":1800,"work_sec":1800,"result_cd":"OK"},
         {"order_no":"O3","product_name":"P3","process_name":"外装組立","worker_name":"W2","start_ts":datetime(2026,1,5,9,30),"end_ts":datetime(2026,1,5,10,0),"elapsed_sec":1800,"work_sec":1800,"result_cd":"OK"},
@@ -61,8 +61,8 @@ def test_kpi2_long_stagnation_is_counted_across_multiple_buckets() -> None:
     pair = trend[trend["pair"] == "内装組立 → 外装組立"].set_index("timestamp")
 
     assert pair.loc[pd.Timestamp("2026-01-05 08:00:00"), "stagnation_count"] >= 1
-    assert pair.loc[pd.Timestamp("2026-01-05 09:45:00"), "stagnation_count"] >= 1
-    assert pair.loc[pd.Timestamp("2026-01-05 10:00:00"), "stagnation_count"] <= pair.loc[pd.Timestamp("2026-01-05 09:45:00"), "stagnation_count"]
+    assert pair.loc[pd.Timestamp("2026-01-05 09:15:00"), "stagnation_count"] >= 1
+    assert pair.loc[pd.Timestamp("2026-01-05 09:30:00"), "stagnation_count"] <= pair.loc[pd.Timestamp("2026-01-05 09:15:00"), "stagnation_count"]
 
 
 def test_kpi2_carryover_before_previous_day_is_included() -> None:
@@ -96,11 +96,10 @@ def test_kpi2_invalid_sequence_remains_in_detail_but_not_counted() -> None:
     pair = trend[trend["pair"] == "外装組立 → 出荷検査"]
     assert (pair["stagnation_count"] >= 0).all()
 
-def test_kpi2_uses_first_valid_next_process_after_from_end() -> None:
+def test_kpi2_uses_next_process_start_not_end() -> None:
     df = _df()
     extra = pd.DataFrame([
         {"order_no":"OY","product_name":"PY","process_name":"内装組立","worker_name":"W1","start_ts":datetime(2026,1,5,8,0),"end_ts":datetime(2026,1,5,8,30),"elapsed_sec":1800,"work_sec":1800,"result_cd":"OK"},
-        {"order_no":"OY","product_name":"PY","process_name":"外装組立","worker_name":"W2","start_ts":datetime(2026,1,5,7,0),"end_ts":datetime(2026,1,5,7,45),"elapsed_sec":2700,"work_sec":2700,"result_cd":"OK"},
         {"order_no":"OY","product_name":"PY","process_name":"外装組立","worker_name":"W2","start_ts":datetime(2026,1,5,8,45),"end_ts":datetime(2026,1,5,9,0),"elapsed_sec":900,"work_sec":900,"result_cd":"OK"},
     ])
     extra["work_date"] = extra["end_ts"].dt.date
@@ -109,10 +108,10 @@ def test_kpi2_uses_first_valid_next_process_after_from_end() -> None:
 
     trend, detail = build_kpi2(df, date(2026,1,5), date(2026,1,5))
     row = detail[(detail["order_no"] == "OY") & (detail["pair"] == "内装組立 → 外装組立")].iloc[0]
-    assert bool(row["is_invalid_sequence"]) is True
-    assert row["to_end"] == pd.Timestamp("2026-01-05 09:00:00")
+    assert bool(row["is_invalid_sequence"]) is False
+    assert row["to_start"] == pd.Timestamp("2026-01-05 08:45:00")
 
     pair = trend[trend["pair"] == "内装組立 → 外装組立"].set_index("timestamp")
-    # 08:30 完了から 09:00 完了までは滞留としてカウントされる。
+    # 08:30 完了から08:45開始までだけ滞留としてカウントする。
     assert pair.loc[pd.Timestamp("2026-01-05 08:30:00"), "stagnation_count"] >= 1
-    assert pair.loc[pd.Timestamp("2026-01-05 09:00:00"), "stagnation_count"] <= pair.loc[pd.Timestamp("2026-01-05 08:45:00"), "stagnation_count"]
+    assert pair.loc[pd.Timestamp("2026-01-05 08:45:00"), "stagnation_count"] <= pair.loc[pd.Timestamp("2026-01-05 08:30:00"), "stagnation_count"]

@@ -202,7 +202,7 @@ psql -U results_user -d results_record_db -f ddl_results_record_db.sql
 ## 10. Python 側で必要なパッケージ
 
 ```bash
-pip install sqlalchemy psycopg pandas streamlit openpyxl pytest
+python -m pip install -r requirements.txt
 ```
 
 > 補足: `pandas` や `streamlit` は実装上使うが、本ドキュメントでは詳細説明を目的としない。

@@ -16,8 +16,18 @@ from ingest import (
     calc_work_sec,
     ingest_file,
     ingest_files,
+    normalize_order_no,
     prepare_ingest_file,
 )
+
+
+def test_order_no_keeps_business_key_characters() -> None:
+    """ハイフンと英字大小は業務キーの一部として保持する。"""
+    assert normalize_order_no("  ORD-260105-001  ") == "ORD-260105-001"
+    assert normalize_order_no("ord-260105-001") == "ord-260105-001"
+    assert normalize_order_no("ORD260105001") != normalize_order_no("ORD-260105-001")
+
+
 def test_internal_start_marker_reject(session: Session, tmp_path: Path, write_csv) -> None:
     """内装組立で start_marker 不正時に reject されることを確認する。"""
     p = tmp_path / 'INTASM_TestWorker_202601.csv'

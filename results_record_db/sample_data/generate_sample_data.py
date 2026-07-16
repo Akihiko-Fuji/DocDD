@@ -1,249 +1,405 @@
+"""results_record_db のセミナー用サンプルを再現可能な形で生成する。
+
+このスクリプトをサンプルデータの正本とする。生成物は次を満たす。
+
+- 2026-01-05〜2026-01-30 の19営業日（土日と1月12日を除く）
+- 1日175〜275台、1製番につき3工程各1レコード
+- order_no は ``ORD-YYMMDD-NNN`` 形式を全ファイルで保持
+- 内装2台、外装3ライン、出荷検査4ラインの能力差を再現
+- 同じ乱数シードから同じCSVを再生成できる
+"""
+
+from __future__ import annotations
+
 import csv
 import random
+from collections import Counter, defaultdict
+from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
+from pathlib import Path
+from typing import Iterable
 
-random.seed(42)
+SEED = 20260717
+BASE_DIR = Path(__file__).resolve().parent
+ROOT_DIR = BASE_DIR.parent
+HOLIDAYS = {date(2026, 1, 12)}
+WORK_START = time(8, 0)
+LUNCH_START = time(12, 0)
+LUNCH_END = time(13, 0)
+WORK_END = time(17, 0)
+
+# すべて仕様範囲（175〜275台）内。極端な乱高下を避ける。
+DAILY_COUNTS = {
+    date(2026, 1, 5): 194,
+    date(2026, 1, 6): 225,
+    date(2026, 1, 7): 232,
+    date(2026, 1, 8): 218,
+    date(2026, 1, 9): 240,
+    date(2026, 1, 13): 224,
+    date(2026, 1, 14): 231,
+    date(2026, 1, 15): 219,
+    date(2026, 1, 16): 226,
+    date(2026, 1, 19): 235,
+    date(2026, 1, 20): 228,
+    date(2026, 1, 21): 242,
+    date(2026, 1, 22): 221,
+    date(2026, 1, 23): 230,
+    date(2026, 1, 26): 238,
+    date(2026, 1, 27): 216,
+    date(2026, 1, 28): 244,
+    date(2026, 1, 29): 227,
+    date(2026, 1, 30): 231,
+}
 
 PRODUCTS = [
-    ("RS-90X180-WH", (130, 155), (200, 260), (290, 360), 900, 1800),
-    ("RS-120X200-GY", (140, 165), (210, 275), (310, 380), 1200, 2000),
-    ("VB-50-80X150-IV", (160, 195), (260, 320), (360, 430), 800, 1500),
-    ("VT-80X200-LG", (185, 225), (310, 380), (420, 500), 800, 2000),
-    ("RS-180X220-BK", (200, 240), (340, 420), (460, 540), 1800, 2200),
+    ("RS-90X180-WH", 900, 1800),
+    ("RS-120X200-GY", 1200, 2000),
+    ("VB-50-80X150-IV", 800, 1500),
+    ("VT-80X200-LG", 800, 2000),
+    ("RS-180X220-BK", 1800, 2200),
+    ("VB-60-90X160-BR", 900, 1600),
 ]
-PDICT = {p[0]: p for p in PRODUCTS}
 
-PLAN = {
-    date(2026, 1, 5): 18, date(2026, 1, 6): 25, date(2026, 1, 7): 20, date(2026, 1, 8): 13, date(2026, 1, 9): 19,
-    date(2026, 1, 13): 24, date(2026, 1, 14): 21, date(2026, 1, 15): 18, date(2026, 1, 16): 12,
-    date(2026, 1, 19): 20, date(2026, 1, 20): 22, date(2026, 1, 21): 26, date(2026, 1, 22): 19, date(2026, 1, 23): 18,
-    date(2026, 1, 26): 21, date(2026, 1, 27): 25, date(2026, 1, 28): 20, date(2026, 1, 29): 19, date(2026, 1, 30): 13,
+INTERNAL_WORKERS = ["HanaYamada", "KentoTakahashi"]
+EXTERNAL_WEIGHTS = {
+    "MunekiYoshimura": 0.200,
+    "ShuheiYamashita": 0.433,
+    "ToshioAndo": 0.367,
 }
-DAYS = list(PLAN.keys())
-KIMURA_BAD = {date(2026, 1, 7), date(2026, 1, 13), date(2026, 1, 20), date(2026, 1, 28)}
+SHIPPING_WEIGHTS = {
+    "加藤葵": 0.175,
+    "小林陽": 0.275,
+    "田中玲": 0.350,
+    "鈴木ミカ": 0.200,
+}
+EXTERNAL_FACTORS = {
+    "MunekiYoshimura": 0.6,
+    "ShuheiYamashita": 1.3,
+    "ToshioAndo": 1.1,
+}
+SHIPPING_FACTORS = {"加藤葵": 0.7, "小林陽": 1.1, "田中玲": 1.4, "鈴木ミカ": 0.8}
 
-def dt(d, h=8, m=0, s=0):
-    return datetime.combine(d, time(h, m, s))
 
-def dur(rng):
-    return timedelta(seconds=random.randint(*rng))
+@dataclass
+class OrderRecord:
+    order_no: str
+    product_name: str
+    width_mm: int
+    height_mm: int
+    internal_worker: str
+    external_worker: str
+    inspector_name: str
+    internal_start: datetime
+    internal_end: datetime
+    external_start: datetime
+    external_end: datetime
+    shipping_start: datetime
+    shipping_end: datetime
+    result_ng: int
 
-def wait1(t0, plus=0):
-    if t0.hour < 10: base = (60 + plus, 120 + plus)
-    elif t0.hour < 12: base = (30 + plus, 60 + plus)
-    elif t0.hour < 15: base = (15 + plus, 30 + plus)
-    else: base = (10 + plus, 20 + plus)
-    return timedelta(minutes=random.randint(*base))
 
-def wait2():
-    return timedelta(minutes=random.randint(10, 40))
+def _next_business_day(day: date) -> date:
+    current = day + timedelta(days=1)
+    while current.weekday() >= 5 or current in HOLIDAYS:
+        current += timedelta(days=1)
+    return current
 
-def pick_products(n):
-    seq=[]
-    cycle=[0,1,2,3,4,1,2,0,4,3]
-    for i in range(n): seq.append(PRODUCTS[cycle[i%len(cycle)]][0])
-    return seq
 
-def build():
-    orders=[]
-    order_no=10001
-    kpi2_low_days=0
-    ext_wait_plus=0
+def _schedule_nonpreemptive(
+    ready: datetime, release: datetime, duration_sec: int
+) -> tuple[datetime, datetime]:
+    """昼休みをまたがず、営業時間内に1作業を配置する。"""
+    start = max(ready, release)
     while True:
-        orders.clear()
-        order_no=10001
-        for d in DAYS:
-            n=PLAN[d]
-            prods=pick_products(n)
-            tanaka_target = 5 + (0 if d.day<=9 else 1 if d.day<=16 else 2 if d.day<=23 else 3)
-            tanaka_target += 0 if d.day%2 else 1
-            tanaka_target = min(max(tanaka_target,5),9)
-            yamada_target = n - tanaka_target
-            if yamada_target < 10:
-                yamada_target = 10
-                tanaka_target = n - 10
-            if yamada_target > 12:
-                yamada_target = 12
-                tanaka_target = n - 12
-            ext_kimura = 12 if n >= 24 else 10
-            if d in KIMURA_BAD: ext_kimura = 6 if n >= 18 else 5
-            ext_sato = n - ext_kimura
-            m1_end = dt(d,8,0,0)
-            m2_end = dt(d,8,0,40)
-            int_times=[]
-            for i,p in enumerate(prods):
-                machine=1 if i%2==0 else 2
-                prev=m1_end if machine==1 else m2_end
-                pdef=PDICT[p]
-                dsec=dur(pdef[1])
-                setup=timedelta(seconds=random.randint(5,15))
-                end_t = prev + dsec
-                start_t = end_t - dsec
-                if start_t.time() >= time(12,0) and start_t.time() < time(13,0):
-                    start_t = dt(d,13,0,0)
-                    end_t = start_t + dsec
-                if end_t.time() > time(17,0):
-                    end_t = dt(d,16,59,0)
-                    start_t = end_t - dsec
-                if machine==1: m1_end = end_t + setup
-                else: m2_end = end_t + setup
-                int_times.append((start_t,end_t))
-            day_orders=[]
-            for i,p in enumerate(prods):
-                ono=f"ORD202601{order_no:05d}"
-                order_no += 1
-                int_worker = "TanakaJiro" if i < tanaka_target else "YamadaTaro"
-                ext_worker = "KimuraNao" if i < ext_kimura else "SatoKen"
-                pdef=PDICT[p]
-                istart,iend=int_times[i]
-                estart = iend + wait1(iend, plus=ext_wait_plus)
-                edur = dur(pdef[2])
-                if ext_worker=="KimuraNao" and d in KIMURA_BAD:
-                    edur = timedelta(seconds=int(edur.total_seconds()*1.4))
-                eend = estart + edur
-                sstart = eend + wait2()
-                sdur = dur(pdef[3])
-                send = sstart + sdur
-                if send.time() > time(17,0):
-                    overflow = datetime.combine(d, time(17,0)) - send
-                    sstart += overflow
-                    send += overflow
-                if sstart.time() < time(8,0):
-                    sstart = dt(d,8,0,0); send = sstart + sdur
-                if sstart.time() >= time(12,0) and sstart.time() < time(13,0):
-                    sstart = dt(d,13,0,0); send = sstart + sdur
-                ship_worker = "SuzukiMika"
-                if d >= date(2026,1,27) and i >= 8:
-                    ship_worker = "NakamuraRyo"
-                ng=0
-                if (order_no % 53)==0 or (order_no % 67)==0: ng=1
-                day_orders.append(dict(date=d,order_no=ono,product=p,int_worker=int_worker,ext_worker=ext_worker,ship_worker=ship_worker,
-                                       int_start=istart,int_end=iend,ext_start=estart,ext_end=eend,ship_start=sstart,ship_end=send,ng=ng,
-                                       tehai_no=f"TH{order_no}",check_no=f"CHK{order_no}",slip_no=f"SLP{order_no}"))
-            orders.extend(day_orders)
-        validate(orders)
-        low_days, kpi = kpi2(orders)
-        int10_12, ext10_12 = kpi1_1012(orders)
-        if low_days >=3:
-            ext_wait_plus += 15
+        day = start.date()
+        if day.weekday() >= 5 or day in HOLIDAYS:
+            start = datetime.combine(_next_business_day(day), WORK_START)
             continue
-        if ext10_12 > int10_12:
-            ext_wait_plus += 10
+        if start.time() < WORK_START:
+            start = datetime.combine(day, WORK_START)
+        elif LUNCH_START <= start.time() < LUNCH_END:
+            start = datetime.combine(day, LUNCH_END)
+        elif start.time() >= WORK_END:
+            start = datetime.combine(_next_business_day(day), WORK_START)
             continue
-        break
+
+        end = start + timedelta(seconds=duration_sec)
+        lunch = datetime.combine(day, LUNCH_START)
+        close = datetime.combine(day, WORK_END)
+        if start < lunch < end:
+            start = datetime.combine(day, LUNCH_END)
+            continue
+        if end > close:
+            start = datetime.combine(_next_business_day(day), WORK_START)
+            continue
+        return start, end
+
+
+def _weighted_labels(total: int, weights: dict[str, float], rng: random.Random) -> list[str]:
+    """最大剰余法で総数を配分し、並び順だけを再現可能にシャッフルする。"""
+    raw = {name: total * weight for name, weight in weights.items()}
+    counts = {name: int(value) for name, value in raw.items()}
+    remainder = total - sum(counts.values())
+    order = sorted(weights, key=lambda name: raw[name] - counts[name], reverse=True)
+    for name in order[:remainder]:
+        counts[name] += 1
+    labels = [name for name, count in counts.items() for _ in range(count)]
+    rng.shuffle(labels)
+    return labels
+
+
+def build_orders() -> list[OrderRecord]:
+    rng = random.Random(SEED)
+    orders: list[OrderRecord] = []
+
+    for day, count in DAILY_COUNTS.items():
+        # 日ごとに能力比へ近づけ、特定日の一ラインへの偏りと翌日持越しを防ぐ。
+        external_labels = iter(_weighted_labels(count, EXTERNAL_WEIGHTS, rng))
+        shipping_labels = iter(_weighted_labels(count, SHIPPING_WEIGHTS, rng))
+        internal_ready = {
+            worker: datetime.combine(day, WORK_START) for worker in INTERNAL_WORKERS
+        }
+        external_ready = {
+            worker: datetime.combine(day, WORK_START) for worker in EXTERNAL_WEIGHTS
+        }
+        shipping_ready = {
+            worker: datetime.combine(day, WORK_START) for worker in SHIPPING_WEIGHTS
+        }
+
+        for index in range(1, count + 1):
+            order_no = f"ORD-{day.strftime('%y%m%d')}-{index:03d}"
+            product_name, width_mm, height_mm = PRODUCTS[(index + day.day) % len(PRODUCTS)]
+
+            internal_worker = INTERNAL_WORKERS[(index - 1) % len(INTERNAL_WORKERS)]
+            internal_duration = rng.randint(138, 162)
+            internal_start, internal_end = _schedule_nonpreemptive(
+                internal_ready[internal_worker],
+                datetime.combine(day, WORK_START),
+                internal_duration,
+            )
+            internal_ready[internal_worker] = internal_end + timedelta(seconds=rng.randint(5, 15))
+
+            external_worker = next(external_labels)
+            external_duration = max(
+                120,
+                int(rng.triangular(220, 290, 240) / EXTERNAL_FACTORS[external_worker]),
+            )
+            external_release = internal_end + timedelta(minutes=rng.randint(5, 15))
+            external_start, external_end = _schedule_nonpreemptive(
+                external_ready[external_worker], external_release, external_duration
+            )
+            external_ready[external_worker] = external_end + timedelta(seconds=rng.randint(5, 20))
+
+            inspector_name = next(shipping_labels)
+            shipping_duration = max(
+                150,
+                int(rng.gauss(340, 25) / SHIPPING_FACTORS[inspector_name]),
+            )
+            shipping_release = external_end + timedelta(minutes=rng.randint(10, 25))
+            shipping_start, shipping_end = _schedule_nonpreemptive(
+                shipping_ready[inspector_name], shipping_release, shipping_duration
+            )
+            shipping_ready[inspector_name] = shipping_end + timedelta(seconds=rng.randint(5, 20))
+
+            # 約2%。再現性を優先し、order_noから決める。
+            result_ng = 1 if (len(orders) + 1) % 53 == 0 else 0
+            orders.append(
+                OrderRecord(
+                    order_no=order_no,
+                    product_name=product_name,
+                    width_mm=width_mm,
+                    height_mm=height_mm,
+                    internal_worker=internal_worker,
+                    external_worker=external_worker,
+                    inspector_name=inspector_name,
+                    internal_start=internal_start,
+                    internal_end=internal_end,
+                    external_start=external_start,
+                    external_end=external_end,
+                    shipping_start=shipping_start,
+                    shipping_end=shipping_end,
+                    result_ng=result_ng,
+                )
+            )
+    validate_orders(orders)
     return orders
 
-def validate(orders):
-    for o in orders:
-        assert o['int_end'] < o['ext_start'], f"{o['order_no']}: 内装end > 外装start"
-        assert o['ext_end'] < o['ship_start'], f"{o['order_no']}: 外装end > 出荷検査start"
-        assert o['int_end'].date() == o['int_start'].date(), f"{o['order_no']}: 内装が日またぎ"
-        assert o['ext_end'].date() == o['ext_start'].date(), f"{o['order_no']}: 外装が日またぎ"
-        assert o['ship_end'].date() == o['ship_start'].date(), f"{o['order_no']}: 出荷検査が日またぎ"
-        assert time(8,0) <= o['int_start'].time() <= time(17,0)
-        assert time(8,0) <= o['int_end'].time() <= time(17,0)
-        assert time(8,0) <= o['ext_start'].time() <= time(17,0)
-        assert time(8,0) <= o['ext_end'].time() <= time(17,0)
-        assert time(8,0) <= o['ship_start'].time() <= time(17,0)
-        assert time(8,0) <= o['ship_end'].time() <= time(17,0)
 
-def kpi2(orders):
-    low=0
-    byday={}
-    for d in DAYS:
-        day=[o for o in orders if o['date']==d]
-        peak=0; ptime='08:00'
-        t=dt(d,8,0)
-        while t<=dt(d,17,0):
-            wip=sum(1 for o in day if o['int_end']<=t<o['ext_end'])
-            if wip>peak: peak=wip; ptime=t.strftime('%H:%M')
-            t += timedelta(minutes=15)
-        byday[d]=(peak,ptime)
-        if peak<4: low += 1
-    return low, byday
+def validate_orders(orders: Iterable[OrderRecord]) -> None:
+    records = list(orders)
+    expected = sum(DAILY_COUNTS.values())
+    assert len(records) == expected
+    assert len({record.order_no for record in records}) == expected
+    for record in records:
+        assert record.order_no.startswith("ORD-")
+        assert record.internal_end <= record.external_start
+        assert record.external_end <= record.shipping_start
+        for ts in (
+            record.internal_start,
+            record.internal_end,
+            record.external_start,
+            record.external_end,
+            record.shipping_start,
+            record.shipping_end,
+        ):
+            assert ts.date().weekday() < 5 and ts.date() not in HOLIDAYS
+            assert WORK_START <= ts.time() <= WORK_END
 
-def kpi1_1012(orders):
-    i=sum(1 for o in orders if 10<=o['int_end'].hour<12)
-    e=sum(1 for o in orders if 10<=o['ext_end'].hour<12)
-    return i,e
 
-def write_csvs(orders):
-    base='results_record_db/sample_data'
-    int_headers=['start_date','start_time','start_marker','end_date','end_time','end_marker','order_no']
-    for worker in ['YamadaTaro','TanakaJiro']:
-        with open(f'{base}/INTASM_{worker}_202601.csv','w',newline='',encoding='utf-8') as f:
-            w=csv.writer(f); w.writerow(int_headers)
-            for o in orders:
-                if o['int_worker']==worker:
-                    w.writerow([o['int_start'].strftime('%Y/%m/%d'),o['int_start'].strftime('%H:%M:%S'),'START',o['int_end'].strftime('%Y/%m/%d'),o['int_end'].strftime('%H:%M:%S'),'END',o['order_no']])
-    ext_headers=['production_date_yymmdd','check_no','qr_read_ts','all_clear_ts','production_date','packing_date','tehai_no','order_no','product_name','width_mm','height_mm','material_code1','material_name1','material_qty1','material_code2','material_name2','material_qty2','qr_clear_count','initial_clear_count','forced_clear_count','material_pick_count','error_code']
-    for worker in ['SatoKen','KimuraNao']:
-        with open(f'{base}/EXTASM_{worker}_202601.csv','w',newline='',encoding='utf-8') as f:
-            w=csv.writer(f); w.writerow(ext_headers)
-            for o in orders:
-                if o['ext_worker']==worker:
-                    p=PDICT[o['product']]
-                    w.writerow([o['date'].strftime('%y%m%d'),o['check_no'],o['ext_start'].strftime('%Y-%m-%d %H:%M:%S'),o['ext_end'].strftime('%Y-%m-%d %H:%M:%S'),o['date'].strftime('%Y-%m-%d'),o['date'].strftime('%Y-%m-%d'),o['tehai_no'],o['order_no'],o['product'],p[4],p[5],'M001','FRAME',1,'M002','SLAT',1,1,1,0,2,''])
-    ship_headers=['inspector_name','inspection_date','slip_no','product_name','start_time','end_time','work_minutes','tehai_no','order_no','bottom_ng_count','slat_ng_count','balance_ng_count','ng_total']
-    with open(f'{base}/SHIPCHK_202601.csv','w',newline='',encoding='utf-8') as f:
-        w=csv.writer(f); w.writerow(ship_headers)
-        for o in orders:
-            ng=o['ng']
-            w.writerow([o['ship_worker'],o['date'].strftime('%Y-%m-%d'),o['slip_no'],o['product'],o['ship_start'].strftime('%H:%M:%S'),o['ship_end'].strftime('%H:%M:%S'),int((o['ship_end']-o['ship_start']).total_seconds()//60),o['tehai_no'],o['order_no'],ng,0,0,ng])
-    with open(f'{base}/order_product_master.csv','w',newline='',encoding='utf-8') as f:
-        w=csv.writer(f); w.writerow(['order_no','product_name'])
-        for o in orders: w.writerow([o['order_no'],o['product']])
+def _write_rows(path: Path, header: list[str], rows: Iterable[list[object]]) -> None:
+    with path.open("w", encoding="utf-8", newline="") as file:
+        writer = csv.writer(file, lineterminator="\n")
+        writer.writerow(header)
+        writer.writerows(rows)
 
-def print_summary(orders):
-    print('=== 生成サマリ ===')
-    print(f'総order_no件数: {len(orders)}件\n')
-    print('[工程別レコード件数]')
-    print(f'内装組立: {len(orders)}件')
-    print(f'外装組立: {len(orders)}件')
-    print(f'出荷検査: {len(orders)}件\n')
 
-    def wk(d):
-        return 1 if d.day<=9 else 2 if d.day<=16 else 3 if d.day<=23 else 4
-    workers=['YamadaTaro','TanakaJiro','SatoKen','KimuraNao','SuzukiMika','NakamuraRyo']
-    print('[作業者別・週別件数]')
-    print('          第1週  第2週  第3週  第4週')
-    for w in workers:
-        c=[0,0,0,0]
-        for o in orders:
-            if o['int_worker']==w or o['ext_worker']==w or o['ship_worker']==w:
-                c[wk(o['date'])-1]+=1
-        print(f'{w:<11}{c[0]:>5}{c[1]:>6}{c[2]:>6}{c[3]:>6}')
-    low, byday = kpi2(orders)
-    print('\n[KPI2チェック: 内装完了済み・外装未完了の最大同時仕掛り件数（日別）]')
-    for d in DAYS:
-        p,t=byday[d]
-        print(f'{d}: {p}件 (ピーク {t})')
-    print('\n目標: 全日で最大仕掛り4件以上。4件未満の日が3日以上あれば要調整。')
+def write_normal_files(orders: list[OrderRecord]) -> None:
+    internal_header = [
+        "start_date", "start_time", "start_marker", "end_date", "end_time", "end_marker", "order_no"
+    ]
+    for worker in INTERNAL_WORKERS:
+        rows = []
+        for order in orders:
+            if order.internal_worker == worker:
+                rows.append([
+                    order.internal_start.strftime("%Y-%m-%d"),
+                    order.internal_start.strftime("%H:%M:%S"),
+                    "START",
+                    order.internal_end.strftime("%Y-%m-%d"),
+                    order.internal_end.strftime("%H:%M:%S"),
+                    "END",
+                    order.order_no,
+                ])
+        _write_rows(BASE_DIR / f"INTASM_{worker}_202601.csv", internal_header, rows)
 
-    def band(ts):
-        h=ts.hour
-        if 8<=h<10: return 0
-        if 10<=h<12: return 1
-        if 13<=h<15: return 2
-        if 15<=h<17: return 3
-        return None
-    c1=[0,0,0,0]; c2=[0,0,0,0]; c3=[0,0,0,0]
-    for o in orders:
-        b=band(o['int_end']);
-        if b is not None: c1[b]+=1
-        b=band(o['ext_end']);
-        if b is not None: c2[b]+=1
-        b=band(o['ship_end']);
-        if b is not None: c3[b]+=1
-    print('\n[KPI1チェック: 時間帯別完了件数（全期間合計）]')
-    print(f'内装: 08-10時 {c1[0]}件 / 10-12時 {c1[1]}件 / 13-15時 {c1[2]}件 / 15-17時 {c1[3]}件')
-    print(f'外装: 08-10時 {c2[0]}件 / 10-12時 {c2[1]}件 / 13-15時 {c2[2]}件 / 15-17時 {c2[3]}件')
-    print(f'出荷: 08-10時 {c3[0]}件 / 10-12時 {c3[1]}件 / 13-15時 {c3[2]}件 / 15-17時 {c3[3]}件')
+    external_header = [
+        "production_date_yymmdd", "check_no", "qr_read_ts", "all_clear_ts", "production_date",
+        "packing_date", "tehai_no", "order_no", "product_name", "width_mm", "height_mm",
+        "material_code1", "material_name1", "material_qty1", "material_code2", "material_name2",
+        "material_qty2", "qr_clear_count", "initial_clear_count", "forced_clear_count",
+        "material_pick_count", "error_code",
+    ]
+    for worker in EXTERNAL_WEIGHTS:
+        rows = []
+        for order in orders:
+            if order.external_worker == worker:
+                suffix = order.order_no[-10:].replace("-", "")
+                rows.append([
+                    order.external_start.strftime("%y%m%d"), f"CHK-{suffix}",
+                    order.external_start.strftime("%Y-%m-%d %H:%M:%S"),
+                    order.external_end.strftime("%Y-%m-%d %H:%M:%S"),
+                    order.external_start.strftime("%Y-%m-%d"),
+                    order.external_start.strftime("%Y-%m-%d"), f"TEH-{suffix}", order.order_no,
+                    order.product_name, order.width_mm, order.height_mm, "MAT-001", "Frame", 1,
+                    "MAT-002", "Panel", 1, 1, 1, 0, 2, "",
+                ])
+        _write_rows(BASE_DIR / f"EXTASM_{worker}_202601.csv", external_header, rows)
 
-def main():
-    orders=build()
-    write_csvs(orders)
+    shipping_header = [
+        "inspector_name", "inspection_date", "slip_no", "product_name", "start_time", "end_time",
+        "work_minutes", "tehai_no", "order_no", "bottom_ng_count", "slat_ng_count",
+        "balance_ng_count", "ng_total",
+    ]
+    shipping_rows = []
+    for order in orders:
+        suffix = order.order_no[-10:].replace("-", "")
+        shipping_rows.append([
+            order.inspector_name, order.shipping_start.strftime("%Y-%m-%d"), f"SLIP-{suffix}",
+            order.product_name, order.shipping_start.strftime("%H:%M:%S"),
+            order.shipping_end.strftime("%H:%M:%S"),
+            round((order.shipping_end - order.shipping_start).total_seconds() / 60, 1),
+            f"TEH-{suffix}", order.order_no, order.result_ng, 0, 0, order.result_ng,
+        ])
+    _write_rows(BASE_DIR / "SHIPCHK_202601.csv", shipping_header, shipping_rows)
+
+    _write_rows(
+        BASE_DIR / "order_product_master.csv",
+        ["order_no", "product_name"],
+        ([order.order_no, order.product_name] for order in orders),
+    )
+
+
+def write_invalid_files(orders: list[OrderRecord]) -> None:
+    first = orders[:6]
+    internal_header = [
+        "start_date", "start_time", "start_marker", "end_date", "end_time", "end_marker", "order_no"
+    ]
+    internal_rows = [
+        ["2026-01-05", "09:00:00", "START", "2026-01-05", "08:59:00", "END", first[0].order_no],
+        ["2026-01-05", "09:00:00", "BEGIN", "2026-01-05", "09:03:00", "END", first[1].order_no],
+        ["2026-01-05", "09:00:00", "START", "2026-01-05", "09:03:00", "FIN", first[2].order_no],
+        ["2026-01-05", "09:00:00", "START", "2026-01-05", "09:03:00", "END", ""],
+        ["2026-01-05", "09:00:00", "START", "2026-01-05", "09:03:00", "END", "ORD-260105-999"],
+        ["2026-01-05", "09:00:00", "START", "2026-01-05", "09:03:00", "END", first[5].order_no],
+    ]
+    _write_rows(BASE_DIR / "INTASM_HanaYamadaInvalid_202601.csv", internal_header, internal_rows)
+
+    external_header = ["order_no", "product_name", "qr_read_ts", "all_clear_ts", "error_code"]
+    external_rows = [
+        [first[0].order_no, first[0].product_name, "2026-01-05 09:00:00", "2026-01-05 09:05:00", "E001"],
+        [first[1].order_no, first[1].product_name, "2026-01-05 09:10:00", "2026-01-05 09:05:00", ""],
+        ["", first[2].product_name, "2026-01-05 09:00:00", "2026-01-05 09:05:00", ""],
+        [first[3].order_no, first[3].product_name, "2026-99-05 09:00:00", "2026-01-05 09:05:00", ""],
+        [first[4].order_no, "", "2026-01-05 09:00:00", "2026-01-05 09:05:00", ""],
+    ]
+    _write_rows(BASE_DIR / "EXTASM_MunekiYoshimuraInvalid_202601.csv", external_header, external_rows)
+
+    shipping_header = [
+        "inspector_name", "inspection_date", "product_name", "start_time", "end_time", "order_no", "ng_total"
+    ]
+    shipping_rows = [
+        ["", "2026-01-05", first[0].product_name, "09:00:00", "09:05:00", first[0].order_no, 0],
+        ["田中玲", "2026-01-05", first[1].product_name, "09:00:00", "09:05:00", "", 0],
+        ["田中玲", "2026-99-05", first[2].product_name, "09:00:00", "09:05:00", first[2].order_no, 0],
+        ["田中玲", "2026-01-05", first[3].product_name, "bad", "09:05:00", first[3].order_no, 0],
+        ["田中玲", "2026-01-05", first[4].product_name, "09:00:00", "09:05:00", first[4].order_no, "未記入"],
+    ]
+    _write_rows(BASE_DIR / "SHIPCHK_202601_invalid.csv", shipping_header, shipping_rows)
+
+
+def write_expected_file(orders: list[OrderRecord]) -> None:
+    header = [
+        "order_no", "product_name", "process_name", "worker_name", "start_ts", "end_ts",
+        "elapsed_sec", "work_sec", "result_cd", "source_system", "source_file_name",
+    ]
+    rows: list[list[object]] = []
+    for order in orders[:3]:
+        stages = [
+            ("内装組立", order.internal_worker, order.internal_start, order.internal_end, "OK",
+             "internal_assembly_tool", f"INTASM_{order.internal_worker}_202601.csv"),
+            ("外装組立", order.external_worker, order.external_start, order.external_end, "OK",
+             "external_assembly_tool", f"EXTASM_{order.external_worker}_202601.csv"),
+            ("出荷検査", order.inspector_name, order.shipping_start, order.shipping_end,
+             "NG" if order.result_ng else "OK", "shipping_inspection_tool", "SHIPCHK_202601.csv"),
+        ]
+        for process, worker, start, end, result, source, file_name in stages:
+            elapsed = int((end - start).total_seconds())
+            rows.append([
+                order.order_no, order.product_name, process, worker,
+                start.strftime("%Y-%m-%d %H:%M:%S"), end.strftime("%Y-%m-%d %H:%M:%S"),
+                elapsed, elapsed, result, source, file_name,
+            ])
+    _write_rows(ROOT_DIR / "sample_expected_work_log.csv", header, rows)
+
+
+def print_summary(orders: list[OrderRecord]) -> None:
+    print(f"generated orders: {len(orders)}")
+    print(f"daily range: {min(DAILY_COUNTS.values())}..{max(DAILY_COUNTS.values())}")
+    print("external:", dict(Counter(order.external_worker for order in orders)))
+    print("shipping:", dict(Counter(order.inspector_name for order in orders)))
+    by_day = defaultdict(int)
+    for order in orders:
+        by_day[order.shipping_start.date()] += 1
+    assert by_day == DAILY_COUNTS
+
+
+def main() -> None:
+    orders = build_orders()
+    write_normal_files(orders)
+    write_invalid_files(orders)
+    write_expected_file(orders)
     print_summary(orders)
 
-if __name__=='__main__':
+
+if __name__ == "__main__":
     main()
