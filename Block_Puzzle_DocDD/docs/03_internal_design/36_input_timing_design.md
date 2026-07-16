@@ -1,7 +1,7 @@
 # 入力タイミング設計 / Input Timing Design
 
 - 文書ID: DOC-DSN-036
-- 最終更新日: 2026-03-24
+- 最終更新日: 2026-07-16
 - 関連文書:
   - `docs/02_external_spec/22_input_operation_spec.md`
   - `docs/03_internal_design/30_architecture_design.md`
@@ -100,8 +100,9 @@ tick end
 ## 7. 固定・後処理との接続
 
 - Down と自動落下のいずれでも下移動不能が観測された場合、同 tick 内で `PL-LOCK-CHECK` へ進めてよい
-- lock 成立後は同 tick 内でライン消去、T-Spin 判定、得点更新、レベル更新、次ピース準備まで完了させる
-- その結果、次 tick 開始時には新しい current piece または `ST-GAMEOVER` のいずれかになっていることを期待する
+- lock 成立後は同tick内でT-Spin判定、得点、ライン数、レベルを更新する
+- 次ピース出現は `23a_timing_constants_spec.md` のライン消去演出待ちとARE完了後に行う
+- ライン消去待ちおよびARE中は `current` を空とし、固定済み盤面を二重描画しない
 
 ## 8. pause / resume バッファ方針
 
@@ -121,7 +122,8 @@ tick end
 
 - T-Spin 判定には「最終成立操作が回転であること」が必要である
 - そのため回転失敗時は `last_successful_action` を回転へ更新してはならない
-- 回転成立後に Down や自動落下が起きても、lock までの間は最後に成立した操作を保持する
+- 回転成立後の自動落下はプレイヤー操作ではないため、最終成立操作の `rotate` を保持する
+- 左右移動またはソフトドロップが成立した場合は、それが新しい最終成立操作となりT-Spin前提を満たさなくなる
 
 ## 10. 図と他文書との関係
 

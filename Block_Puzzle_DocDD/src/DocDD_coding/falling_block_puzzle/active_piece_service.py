@@ -33,7 +33,8 @@ def move(board, piece, dx, dy, action: str):
         piece,
         origin_x=piece.origin_x + dx,
         origin_y=piece.origin_y + dy,
-        last_successful_action=action,
+        # 自動落下はプレイヤー操作ではないため、T-Spin用の最終成立操作を上書きしない。
+        last_successful_action=piece.last_successful_action if action == "fall" else action,
     )
 
     if is_valid_position(board, cand):

@@ -41,7 +41,9 @@ class GameSession:
     next_visible: bool = True
     over_reason: str = ""
     soft_drop_cells: int = 0
+    soft_drop_counter: int = 0
     fall_counter: int = 0
+    are_timer: int = 0
     tspin_flash: int = 0
     line_clear_rows: list[int] = field(default_factory=list)
     line_clear_timer: int = 0

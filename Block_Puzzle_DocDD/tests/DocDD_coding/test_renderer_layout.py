@@ -3,9 +3,10 @@ from src.DocDD_coding.falling_block_puzzle import renderer
 
 
 def test_play_layout_rectangles_fit_screen():
-    board_left = renderer.BOARD_ORIGIN_X - renderer.CELL_SIZE
+    # sidewall.png はセル幅ではなく素材幅32pxで盤面外側へ配置する。
+    board_left = renderer.BOARD_ORIGIN_X - renderer.SIDEWALL_WIDTH
     board_top = renderer.BOARD_ORIGIN_Y
-    board_width = (renderer.BOARD_COLS + 2) * renderer.CELL_SIZE
+    board_width = renderer.BOARD_COLS * renderer.CELL_SIZE + 2 * renderer.SIDEWALL_WIDTH
     board_height = renderer.BOARD_ROWS * renderer.CELL_SIZE
 
     assert board_left >= 0
@@ -40,6 +41,12 @@ def test_sidebar_value_positions_stay_inside_sidebar():
     for x, y in value_positions:
         assert renderer.SIDEBAR_X <= x <= renderer.SIDEBAR_X + renderer.SIDEBAR_W
         assert renderer.SIDEBAR_Y <= y <= renderer.SIDEBAR_Y + renderer.SIDEBAR_H
+
+
+def test_sidebar_keeps_source_aspect_ratio_with_rounding():
+    # 252x648 を幅170へ縮小したときの縦横比を1px以内で維持する。
+    expected_height = round(648 * renderer.SIDEBAR_W / 252)
+    assert abs(renderer.SIDEBAR_H - expected_height) <= 1
 
 
 def test_next_layout_points_stay_inside_next_box():

@@ -1,7 +1,7 @@
 # 境界条件試験項目 / Test Cases: Edge Conditions
 
 - 文書ID: DOC-QA-043
-- 最終更新日: 2026-03-23
+- 最終更新日: 2026-07-16
 - 関連文書:
   - `40_test_strategy.md`
   - `22_input_operation_spec.md`
@@ -34,6 +34,10 @@
 | TC-EC-008 | Hold / Hard drop 非採用確認 | FX-UI-104 | manual | regression/usability | medium | タイトル〜プレイ可能状態 | 入力一覧確認およびプレイ操作 | 1. 画面案内を確認する 2. プレイ中に Hold / Hard drop に相当する操作を試す 3. UI と挙動を確認する | 各状態維持 | Hold 枠、Hard drop 操作、関連表示が存在しない | 未実施/Pass/Fail を記録 | FR-212 / NFR-206 / DOC-SPC-020, DOC-SPC-021, DOC-SPC-022 / DOC-DSN-034 |
 | TC-EC-009 | Left と Right 同時押下 | FX-INP-501 | automated | regression | medium | プレイ中 | Left + Right 同時入力 | 1. `FX-INP-501` の入力列を再生する 2. ピース位置を確認する | `PL-ACTIVE` 維持 | 左右移動なしとして扱われる | 未実施/Pass/Fail を記録 | FR-103 / NFR-002 / DOC-SPC-022 / DOC-DSN-034 |
 | TC-EC-010 | START 押下優先 | FX-INP-502 | automated | smoke/regression | critical | プレイ中、他入力と同時押下可能 | START + Left / Right / A / Down | 1. `FX-INP-502` の入力列を再生する 2. 状態と盤面を確認する | `ST-PLAY -> ST-PAUSE` | 一時停止が優先され、ピース操作は反映されない | 未実施/Pass/Fail を記録 | FR-108, FR-401 / NFR-003 / DOC-SPC-022 / DOC-DSN-032, DOC-DSN-034 |
+| TC-EC-011 | AとB同時押下 | direct | automated | regression | high | プレイ中 | A + B | 同一tickへA/Bを同時入力する | `PL-ACTIVE` 維持 | 回転しない | Pass (2026-07-16) | DOC-SPC-022 / DOC-DSN-036 |
+| TC-EC-012 | ソフトドロップ独立タイマ | direct | automated | regression | critical | 落下可能状態 | Down継続 | 3tick入力し位置と通常落下タイマを確認する | `PL-ACTIVE` 維持 | 3tickで1行だけ落下し、通常落下タイマは進まない | Pass (2026-07-16) | DOC-SPC-023a / DOC-DSN-036 |
+| TC-EC-013 | 固定後ARE | direct | automated | regression | high | ライン消去なしで固定 | なし | 固定後10tickのcurrentと出現を確認する | `PL-ARE -> PL-ACTIVE` | 9tickまではcurrentなし、10tick目に次ピース出現 | Pass (2026-07-16) | DOC-SPC-023a / DOC-DSN-032 |
+| TC-EC-014 | ライン消去後ARE | direct | automated | regression | high | 1行完成で固定 | なし | 消去待ち20tickとARE10tickを確認する | `PL-CLEAR -> PL-ARE -> PL-ACTIVE` | 合計30tick後に次ピースが出現 | Pass (2026-07-16) | DOC-SPC-023a / DOC-DSN-032 |
 
 ## 4. 受入観点
 - 失敗系の結果が「位置・向き維持」として一貫していること

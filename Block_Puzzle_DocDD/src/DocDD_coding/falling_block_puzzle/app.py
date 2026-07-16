@@ -1,11 +1,11 @@
 """Pygame app entry based on DOC-DSN-030."""
 import pygame
 
-from .models import GameState
+from .models import GameSession, GameState
 from .renderer import Renderer
 from .game_session import SessionService
 from .state_controller import StateController
-from .constants import FPS, SOFT_DROP_INTERVAL
+from .constants import FPS
 from .input_mapper import map_pressed
 
 
@@ -18,9 +18,8 @@ def run():
         r = Renderer()
         ctrl = StateController()
         svc = SessionService()
-        s = svc.new_play_session(0)
-        s.state = GameState.TITLE
-        down_hold_frames = 0
+        # TITLE 表示時にプレイ用乱数を先行消費しない。
+        s = GameSession(state=GameState.TITLE)
         left_hold_frames = 0
         right_hold_frames = 0
 
@@ -46,10 +45,6 @@ def run():
             down_is_held = bool(pressed[pygame.K_DOWN])
             left_is_held = bool(pressed[pygame.K_LEFT])
             right_is_held = bool(pressed[pygame.K_RIGHT])
-            if down_is_held:
-                down_hold_frames += 1
-            else:
-                down_hold_frames = 0
             if left_is_held:
                 left_hold_frames += 1
             else:
@@ -67,9 +62,8 @@ def run():
                 {
                     "left": left_repeat,
                     "right": right_repeat,
-                    # step_play 側の soft_drop 処理は "down" 入力1回で1マス進めるため、
-                    # 押しっぱなし時は 3 フレームごとに 1 回だけ伝える。
-                    "down": down_is_held and down_hold_frames % SOFT_DROP_INTERVAL == 0,
+                    # ソフトドロップ間隔は SessionService 側の独立タイマで管理する。
+                    "down": down_is_held,
                 }
             )
             inputs = held_inputs | edge_inputs
@@ -81,7 +75,7 @@ def run():
                     s.start_level = max(0, s.start_level - 1)
                 if "right" in inputs:
                     s.start_level = min(9, s.start_level + 1)
-                if "start" in inputs:
+                if "start" in inputs or "a" in inputs:
                     ns = svc.new_play_session(s.start_level)
                     ns.state = GameState.PLAY
                     s = ns
@@ -99,7 +93,7 @@ def run():
                 elif "back" in inputs or "b" in inputs:
                     ctrl.transition(s, "back")
             elif s.state == GameState.GAMEOVER:
-                if "start" in inputs:
+                if "start" in inputs or "a" in inputs:
                     ctrl.transition(s, "start")
                 elif "back" in inputs or "b" in inputs:
                     ctrl.transition(s, "back")

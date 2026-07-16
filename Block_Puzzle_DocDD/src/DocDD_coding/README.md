@@ -33,7 +33,8 @@ python -m pytest tests/DocDD_coding
 
 ## implementation notes
 - ランダマイザは非7-bagを満たすため Python `random.choice` ベースで seed 再現可能実装を採用。
-- ARE/ライン消去演出待ちは定数定義のみで、初期版ではフレーム待機状態を厳密分離せず最小実装。
+- 通常固定後は ARE 10フレーム、ライン消去時は点滅20フレーム＋ARE 10フレームを適用。
+- ソフトドロップと通常落下は独立タイマで管理し、Down中の二重落下を防止。
 
 
 ## ドキュメント整合性
@@ -43,6 +44,7 @@ python -m pytest tests/DocDD_coding
 ## 既知の制限
 - 画像/文字アセット読込に失敗した場合はフォールバック描画（矩形/標準フォント）へ切替。
 - replay/config 永続化は未実装。
+- `art/fontset` の現物は16×16pxであり、32×32px表示が必要な箇所では整数倍拡大して使用する。
 
 ## vibe_codingとの差分
 - `src/vibe_coding/` は比較用で未編集。本実装は `src/DocDD_coding/` のみ。

@@ -17,27 +17,29 @@ BOARD_ORIGIN_Y = 72
 CELL_SIZE = 24
 BOARD_COLS = 10
 BOARD_ROWS = 18
+SIDEWALL_WIDTH = 32
 
 SIDEBAR_X = 392
 SIDEBAR_Y = 84
 SIDEBAR_W = 170
-SIDEBAR_H = 408
+# sidebar.png は 252x648。幅を基準に同一比率で縮小し、縦横比を崩さない。
+SIDEBAR_H = 437
 
 PLAY_LABEL_X = SIDEBAR_X + 18
-SCORE_VALUE_X = SIDEBAR_X + 28
-SCORE_VALUE_Y = SIDEBAR_Y + 102
-LEVEL_VALUE_X = SIDEBAR_X + 28
-LEVEL_VALUE_Y = SIDEBAR_Y + 190
-LINES_VALUE_X = SIDEBAR_X + 28
-LINES_VALUE_Y = SIDEBAR_Y + 257
-NEXT_BOX_X = SIDEBAR_X + 30
-NEXT_BOX_Y = SIDEBAR_Y + 286
-NEXT_BOX_W = 110
-NEXT_BOX_H = 106
+SCORE_VALUE_X = SIDEBAR_X + 76
+SCORE_VALUE_Y = SIDEBAR_Y + 76
+LEVEL_VALUE_X = SIDEBAR_X + 132
+LEVEL_VALUE_Y = SIDEBAR_Y + 108
+LINES_VALUE_X = SIDEBAR_X + 132
+LINES_VALUE_Y = SIDEBAR_Y + 196
+NEXT_BOX_X = SIDEBAR_X + 31
+NEXT_BOX_Y = SIDEBAR_Y + 300
+NEXT_BOX_W = 109
+NEXT_BOX_H = 129
 NEXT_LABEL_X = SIDEBAR_X + 62
-NEXT_LABEL_Y = SIDEBAR_Y + 310
-NEXT_PIECE_CENTER_X = SIDEBAR_X + 86
-NEXT_PIECE_CENTER_Y = SIDEBAR_Y + 366
+NEXT_LABEL_Y = SIDEBAR_Y + 324
+NEXT_PIECE_CENTER_X = SIDEBAR_X + 85
+NEXT_PIECE_CENTER_Y = SIDEBAR_Y + 382
 NEXT_CELL_SIZE = 16
 TSPIN_LABEL_X = SIDEBAR_X + 8
 TSPIN_LABEL_Y = BOARD_ORIGIN_Y - 42
@@ -99,6 +101,7 @@ class Renderer:
         self.big_font = pygame.font.SysFont(None, 40)
         self.asset_errors: list[str] = []
         self.assets = self._load_assets()
+        self.scaled_assets: dict[tuple[str, int, int], pygame.Surface] = {}
 
         font_root = Path(__file__).resolve().parents[3] / "art" / "fontset"
         self.bitmap_font = BitmapFont(font_root)
@@ -136,6 +139,17 @@ class Renderer:
                 self.asset_errors.append(f"ASSET_DECODE_ERROR:{key}:{path}:{exc}")
         return loaded
 
+    def _scaled_asset(self, key: str, size: tuple[int, int]) -> Optional[pygame.Surface]:
+        """同一サイズの変換結果を再利用し、毎フレームの画像変換を避ける。"""
+        source = self.assets.get(key)
+        if source is None:
+            return None
+        cache_key = (key, size[0], size[1])
+        if cache_key not in self.scaled_assets:
+            # ピクセルアートは補間でぼかさず、輪郭を維持する。
+            self.scaled_assets[cache_key] = pygame.transform.scale(source, size)
+        return self.scaled_assets[cache_key]
+
     def draw(self, s):
         self._draw_background_for_state(s.state)
 
@@ -158,10 +172,7 @@ class Renderer:
         if state == GameState.SETUP_A:
             if "bg" in self.assets:
                 self.screen.blit(
-                    pygame.transform.scale(
-                        self.assets["bg"],
-                        (SCREEN_WIDTH, SCREEN_HEIGHT),
-                    ),
+                    self._scaled_asset("bg", (SCREEN_WIDTH, SCREEN_HEIGHT)),
                     (0, 0),
                 )
             else:
@@ -169,10 +180,7 @@ class Renderer:
         elif state == GameState.TITLE:
             if "title_bg" in self.assets:
                 self.screen.blit(
-                    pygame.transform.scale(
-                        self.assets["title_bg"],
-                        (SCREEN_WIDTH, SCREEN_HEIGHT),
-                    ),
+                    self._scaled_asset("title_bg", (SCREEN_WIDTH, SCREEN_HEIGHT)),
                     (0, 0),
                 )
             else:
@@ -184,12 +192,13 @@ class Renderer:
         self.screen.fill(GAME_BG_COLOR)
         ox, oy, c = BOARD_ORIGIN_X, BOARD_ORIGIN_Y, CELL_SIZE
         if "sidewall" in self.assets:
-            sidewall = pygame.transform.scale(self.assets["sidewall"], (c, c))
+            # sidewall.png は 32x24。セル高24pxを維持し、横幅だけは素材の実寸を使う。
+            sidewall = self._scaled_asset("sidewall", (SIDEWALL_WIDTH, c))
             for y in range(BOARD_ROWS):
-                self.screen.blit(sidewall, (ox - c, oy + y * c))
+                self.screen.blit(sidewall, (ox - sidewall.get_width(), oy + y * c))
                 self.screen.blit(sidewall, (ox + BOARD_COLS * c, oy + y * c))
         elif "wall" in self.assets:
-            wall = pygame.transform.scale(self.assets["wall"], (c, c))
+            wall = self._scaled_asset("wall", (c, c))
             for y in range(BOARD_ROWS):
                 self.screen.blit(wall, (ox - c, oy + y * c))
                 self.screen.blit(wall, (ox + BOARD_COLS * c, oy + y * c))
@@ -202,21 +211,22 @@ class Renderer:
                 self._draw_cell(ox + x * c, oy + y * c, c, self._board_cell_asset_key(v))
 
         if s.current:
-            for x, y in occupied_cells(s.current):
+            current_cells = occupied_cells(s.current)
+            for x, y in current_cells:
                 self._draw_cell(
                     ox + x * c,
                     oy + y * c,
                     c,
-                    self._active_cell_asset_key(s.current.kind, s.current.rotation, x, y),
+                    self._active_cell_asset_key(s.current.kind, s.current.rotation, x, y, current_cells),
                 )
 
         if "sidebar" in self.assets:
-            side = pygame.transform.scale(self.assets["sidebar"], (SIDEBAR_W, SIDEBAR_H))
+            side = self._scaled_asset("sidebar", (SIDEBAR_W, SIDEBAR_H))
             self.screen.blit(side, (SIDEBAR_X, SIDEBAR_Y))
 
-        self._txt(str(s.score), SCORE_VALUE_X, SCORE_VALUE_Y)
-        self._txt(str(s.level), LEVEL_VALUE_X, LEVEL_VALUE_Y)
-        self._txt(str(s.lines), LINES_VALUE_X, LINES_VALUE_Y)
+        self._right_txt(str(s.score), SCORE_VALUE_X, SCORE_VALUE_Y)
+        self._hud_value(str(s.level), LEVEL_VALUE_X, LEVEL_VALUE_Y)
+        self._hud_value(str(s.lines), LINES_VALUE_X, LINES_VALUE_Y)
 
         if s.next_visible:
             self._txt("NEXT", NEXT_LABEL_X, NEXT_LABEL_Y)
@@ -225,10 +235,10 @@ class Renderer:
             self._txt("OFF", NEXT_LABEL_X, NEXT_LABEL_Y)
 
         if s.state == GameState.PAUSE:
-            self._center_txt("PAUSE", 30, scale=3)
+            self._center_txt("PAUSE", 8, scale=2)
         if s.state == GameState.GAMEOVER:
-            self._center_txt("GAME OVER", 30, scale=3)
-            self._center_txt("ENTER RETRY ESC Z TITLE", 70, scale=1)
+            self._center_txt("GAME OVER", 6, scale=2)
+            self._center_txt("ENTER RETRY ESC Z TITLE", 42, scale=1)
         if s.tspin_flash > 0:
             self._txt("T-SPIN!", TSPIN_LABEL_X, TSPIN_LABEL_Y)
 
@@ -250,32 +260,42 @@ class Renderer:
                 origin_x + (x - min_x) * NEXT_CELL_SIZE,
                 origin_y + (y - min_y) * NEXT_CELL_SIZE,
                 NEXT_CELL_SIZE,
-                self._active_cell_asset_key(kind, 0, x, y),
+                self._active_cell_asset_key(kind, 0, x, y, cells),
             )
 
 
     def _board_cell_asset_key(self, value: int) -> Optional[str]:
         if not value:
             return None
-        kind_to_asset = {"T": "brick1", "J": "brick2", "L": "brick3", "S": "brick4", "Z": "brick6"}
+        kind_to_asset = {"T": "brick1", "J": "brick2", "L": "brick3", "O": "brick3", "S": "brick4", "Z": "brick6"}
         if value == 5:
             return "brick5center"
         if value == 6:
             return "brick5end"
         return kind_to_asset.get(chr(value), "block")
 
-    def _active_cell_asset_key(self, kind: str, rotation: int, x: int, y: int) -> str:
-        kind_to_asset = {"T": "brick1", "J": "brick2", "L": "brick3", "S": "brick4", "Z": "brick6"}
+    def _active_cell_asset_key(
+        self,
+        kind: str,
+        rotation: int,
+        x: int,
+        y: int,
+        cells: list[tuple[int, int]],
+    ) -> str:
+        kind_to_asset = {"T": "brick1", "J": "brick2", "L": "brick3", "O": "brick3", "S": "brick4", "Z": "brick6"}
         if kind != "I":
             return kind_to_asset.get(kind, "active")
         if rotation % 2 == 0:
-            return "brick5end" if x in (3, 6) else "brick5center"
-        return "brick5end" if y in (0, 3) else "brick5center"
+            xs = [cell_x for cell_x, _ in cells]
+            return "brick5end" if x in (min(xs), max(xs)) else "brick5center"
+        ys = [cell_y for _, cell_y in cells]
+        return "brick5end" if y in (min(ys), max(ys)) else "brick5center"
 
     def _draw_cell(self, x: int, y: int, size: int, key: Optional[str]):
         rect = pygame.Rect(x, y, size - 1, size - 1)
         if key and key in self.assets:
-            self.screen.blit(pygame.transform.scale(self.assets[key], (size - 1, size - 1)), rect.topleft)
+            cell = self._scaled_asset(key, (size - 1, size - 1))
+            self.screen.blit(cell, rect.topleft)
         else:
             color = (80, 80, 80) if key == "block" else (120, 200, 120) if key else (35, 35, 35)
             pygame.draw.rect(self.screen, color, rect)
@@ -286,6 +306,20 @@ class Renderer:
             self.screen.blit(bmp, (x, y))
         else:
             self.screen.blit(self.font.render(t, True, (230, 230, 230)), (x, y))
+
+    def _right_txt(self, t: str, right_x: int, y: int) -> None:
+        """HUD数値を右揃えし、桁数が変わってもラベルへ食い込ませない。"""
+        bmp = self.bitmap_font.render(t, scale=1)
+        if bmp is not None:
+            self.screen.blit(bmp, (right_x - bmp.get_width(), y))
+        else:
+            surf = self.font.render(t, True, (230, 230, 230))
+            self.screen.blit(surf, (right_x - surf.get_width(), y))
+
+    def _hud_value(self, t: str, right_x: int, y: int) -> None:
+        """暗色サイドバー上でもビットマップ数字を読める背景帯を付ける。"""
+        pygame.draw.rect(self.screen, GAME_BG_COLOR, pygame.Rect(right_x - 74, y - 1, 76, 18))
+        self._right_txt(t, right_x, y)
 
     def _center_txt(self, t: str, y: int, scale: int = 2):
         bmp = self.bitmap_font.render(t, scale=scale)
