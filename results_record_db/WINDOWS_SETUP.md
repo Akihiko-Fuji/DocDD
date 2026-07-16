@@ -225,13 +225,13 @@ python -m pip install -r requirements.txt
 `requirements.txt` でインストールできない場合は、必要なライブラリを個別に入れます。
 
 ```powershell
-py -m pip install -r requirements.txt
+py -m pip install pandas sqlalchemy "psycopg[binary]" streamlit pytest openpyxl
 ```
 
 または、
 
 ```powershell
-python -m pip install -r requirements.txt
+python -m pip install pandas sqlalchemy "psycopg[binary]" streamlit pytest openpyxl
 ```
 
 ---
@@ -704,3 +704,17 @@ Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
 PostgreSQLの詳細な準備は、以下を参照してください。
 
 - [`results_record_db_LOCAL_POSTGRESQL_SETUP.md`](./results_record_db_LOCAL_POSTGRESQL_SETUP.md)
+
+---
+
+## 補足：現行配布版での依存導入（2026-07-17追記）
+
+本文中の個別パッケージ導入例は解説用に残すが、実際のセットアップでは
+`altair` を含む `requirements.txt` を使用する。
+
+```powershell
+py -m pip install --upgrade pip
+py -m pip install -r requirements.txt
+```
+
+`py` が利用できない場合は、`py` を `python` に置き換える。

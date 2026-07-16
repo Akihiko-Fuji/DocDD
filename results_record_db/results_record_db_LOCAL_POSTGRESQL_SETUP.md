@@ -94,6 +94,19 @@ OWNER results_user
 ENCODING 'UTF8';
 ```
 
+---
+
+## 付録：現行配布版の確認事項（2026-07-17追記）
+
+Python側の依存ライブラリは、個別指定ではなく次のコマンドで導入する。
+
+```bash
+python -m pip install -r requirements.txt
+```
+
+通常の `pytest` はSQLiteインメモリDBでロジックを確認する。
+本書で構築するPostgreSQLは、DDL・型・接続・正常6ファイル取込・Streamlit表示を確認する結合環境として使用する。
+
 作成後、接続先を切り替えます。
 
 ```sql
@@ -202,7 +215,7 @@ psql -U results_user -d results_record_db -f ddl_results_record_db.sql
 ## 10. Python 側で必要なパッケージ
 
 ```bash
-python -m pip install -r requirements.txt
+pip install sqlalchemy psycopg pandas streamlit openpyxl pytest
 ```
 
 > 補足: `pandas` や `streamlit` は実装上使うが、本ドキュメントでは詳細説明を目的としない。
