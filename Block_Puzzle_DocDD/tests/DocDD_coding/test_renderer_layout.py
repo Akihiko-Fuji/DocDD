@@ -54,3 +54,16 @@ def test_next_layout_points_stay_inside_next_box():
     assert renderer.NEXT_BOX_Y <= renderer.NEXT_LABEL_Y <= renderer.NEXT_BOX_Y + renderer.NEXT_BOX_H
     assert renderer.NEXT_BOX_X <= renderer.NEXT_PIECE_CENTER_X <= renderer.NEXT_BOX_X + renderer.NEXT_BOX_W
     assert renderer.NEXT_BOX_Y <= renderer.NEXT_PIECE_CENTER_Y <= renderer.NEXT_BOX_Y + renderer.NEXT_BOX_H
+
+
+def test_sidebar_values_share_right_alignment_and_use_their_own_panels():
+    # SCORE の最下位桁を見出しの R 付近へ置き、3項目を同じ右端で揃える。
+    assert renderer.HUD_VALUE_RIGHT_X == renderer.SIDEBAR_X + 132
+    assert renderer.SCORE_VALUE_X == renderer.HUD_VALUE_RIGHT_X
+    assert renderer.LEVEL_VALUE_X == renderer.HUD_VALUE_RIGHT_X
+    assert renderer.LINES_VALUE_X == renderer.HUD_VALUE_RIGHT_X
+
+    # LEVEL / LINES の値は、それぞれのラベル枠内の下段へ配置する。
+    assert renderer.LEVEL_VALUE_Y == renderer.SIDEBAR_Y + 176
+    assert renderer.LINES_VALUE_Y == renderer.SIDEBAR_Y + 249
+    assert renderer.SCORE_VALUE_Y < renderer.LEVEL_VALUE_Y < renderer.LINES_VALUE_Y
