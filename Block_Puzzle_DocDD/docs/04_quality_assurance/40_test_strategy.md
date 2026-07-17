@@ -154,6 +154,14 @@ BR -> UC -> DM -> SR / NSR -> EXT -> Internal Contract -> TC
 
 タイトルからゲームオーバーまでの一連の流れを確認する。
 
+### 6.5 Pull Request時の自動テスト
+
+- GitHub Actions の `.github/workflows/block-puzzle-tests.yml` を使用し、すべての Pull Request で自動テストを実行する
+- Python 3.11 と `Block_Puzzle_DocDD/requirements.txt` を基準環境とする
+- `tests/DocDD_coding/` と `src/DocDD_coding/test_tspin_lock_integration.py` をテスト対象とする
+- pygame の画面・音声初期化は SDL の dummy driver を使用し、GUIのないCI環境でも再現可能にする
+- 自動テストが失敗したPull Requestは、原因を確認してからマージする
+
 ---
 
 ## 7. テストケース群の責務分離
