@@ -127,6 +127,8 @@
 - LINES
 - LEVEL
 - NEXT 領域または NEXT 状態表示
+- SCORE / LEVEL / LINES の数値は共通の右端へ右揃えし、SCORE の最下位桁は見出しの `R` の下付近へ配置する
+- LEVEL / LINES の数値は、それぞれの見出し枠内の下段へ配置する
 
 ### 8.2 NEXT 表示仕様
 
