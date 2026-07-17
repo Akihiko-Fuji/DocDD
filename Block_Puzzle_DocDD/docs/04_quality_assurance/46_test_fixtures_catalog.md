@@ -1,7 +1,7 @@
 # テストフィクスチャ一覧 / Test Fixtures Catalog
 
 - 文書ID: DOC-QA-046
-- 最終更新日: 2026-03-23
+- 最終更新日: 2026-07-17
 - 目的: 盤面前提、入力列、開始状態を再利用可能な fixture として定義し、試験再現性を高める
 - 関連文書:
   - `40_test_strategy.md`
@@ -324,6 +324,65 @@
 - 入力列: frame 12 で `START+Left`, frame 13 で `START+A`
 - 想定開始状態: `ST-PLAY / PL-ACTIVE`
 - 参照 TC: `TC-EC-010`
+
+### FX-INP-503
+- 用途: A/B同時押下相殺
+- 入力列: frame 20 で `A+B`
+- current piece: `T`, rotation=0, origin=(4,4)
+- Board: 全セル空
+- 想定開始状態: `ST-PLAY / PL-ACTIVE`
+- 参照 TC: `TC-EC-011`
+
+## 5.1 Timing / Randomizer Fixture 一覧
+
+### FX-TIM-601
+- 初期値: current=`T`, origin=(4,4), `normal_fall_counter=5`, `soft_drop_counter=0`
+- 入力列: frame 0〜2 の各tickで `Down` 保持
+- 期待値: frame 0,1では座標不変、frame 2で y が1増加。全tick後も `normal_fall_counter=5`
+- 参照 TC: `TC-EC-012`
+
+### FX-TIM-602
+- 初期値: ライン消去なしの固定イベント直後、`current_piece=None`, `are_timer=10`, NEXT=`O`
+- 入力列: 10tick無入力
+- 期待値: tick 1〜9 はcurrentなし、tick 10末尾にO出現
+- 参照 TC: `TC-EC-013`
+
+### FX-TIM-603
+- 初期値: 1行消去の固定イベント直後、`current_piece=None`, `line_clear_timer=20`, `are_timer=0`, `line_clear_rows=[17]`, NEXT=`O`
+- 入力列: 30tick無入力
+- 期待値: tick 20末尾に行削除と`are_timer=10`設定、tick 21〜29はcurrentなし、tick 30末尾にO出現
+- 参照 TC: `TC-EC-014`
+
+### FX-RNG-701
+- seed: `12345`
+- 経路A: seed設定後、直ちに新規ゲーム確定
+- 経路B: タイトル120tick、開始設定120tick表示後に同じ設定で新規ゲーム確定
+- 比較対象: 初期current、visible NEXT、その後供給される10ピース
+- 期待値: 経路A/Bの全比較対象が一致
+- 参照 TC: `TC-EC-015`
+
+### FX-TSP-204
+- current piece: `T`、回転可能かつ回転後に通常重力で1行落下できる配置
+- 初期最終成立操作: `None`
+- 入力列: frame 0で`A`、以後は固定まで無入力
+- 期待値: 回転成功時に`Rotate`、自動落下後も`Rotate`を維持
+- 対照列: 自動落下前に成功する`Right`または`Down`を1回追加し、それぞれ`Move`または`SoftDrop`へ変化すること
+- 参照 TC: `TC-EC-016`
+
+### FX-ART-801
+- Board: 全セル空
+- current: I水平、占有セル `(3,5),(4,5),(5,5),(6,5)`。期待役割は順に`End,Center,Center,End`
+- 操作後: Rightで `(4,5)..(7,5)`、Aで垂直形へ回転しても長軸の先頭・末尾だけが`End`
+- 同じ分類を固定済みセルとNEXTにも適用する
+- 参照 TC: `TC-EC-017`
+
+### FX-ART-802
+- 画面: `ST-PLAY`, 640×576
+- 正本矩形: playfield `(96,72,240,432)`, left wall `(64,72,32,432)`, right wall `(336,72,32,432)`, sidebar `(392,84,170,437)`, next `(423,384,109,129)`
+- 盤面色: 空きセルと周辺背景は `#8ca54a`、格子線は `#78913f`、格子線幅は1px
+- 格子生成: 盤面全体を格子色で塗った後、各24×24pxセルの23×23px内部を描く。背景色の一致にかかわらず格子を識別できること
+- 素材変換: block 32→24、NEXT block 32→16、sidebar 252×648→170×437、すべて最近傍補間
+- 参照 TC: `TC-EC-018`
 
 ## 6. UI / State Fixture 一覧
 
