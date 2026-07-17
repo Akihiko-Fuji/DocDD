@@ -48,6 +48,8 @@ SETUP_LEVEL_Y = 494
 SETUP_HELP_Y = 528
 SETUP_BACK_Y = 552
 GAME_BG_COLOR = (0x8C, 0xA5, 0x4A)
+PLAYFIELD_BG_COLOR = GAME_BG_COLOR
+PLAYFIELD_GRID_COLOR = (0x78, 0x91, 0x3F)
 
 
 class BitmapFont:
@@ -191,6 +193,14 @@ class Renderer:
     def _draw_play(self, s):
         self.screen.fill(GAME_BG_COLOR)
         ox, oy, c = BOARD_ORIGIN_X, BOARD_ORIGIN_Y, CELL_SIZE
+
+        # 盤面背景と格子線を独立させる。先に格子色で盤面全体を塗り、
+        # 各セルの23x23px内部を後から描くことで1pxの格子線を残す。
+        pygame.draw.rect(
+            self.screen,
+            PLAYFIELD_GRID_COLOR,
+            pygame.Rect(ox, oy, BOARD_COLS * c, BOARD_ROWS * c),
+        )
         if "sidewall" in self.assets:
             # sidewall.png は 32x24。セル高24pxを維持し、横幅だけは素材の実寸を使う。
             sidewall = self._scaled_asset("sidewall", (SIDEWALL_WIDTH, c))
@@ -297,7 +307,7 @@ class Renderer:
             cell = self._scaled_asset(key, (size - 1, size - 1))
             self.screen.blit(cell, rect.topleft)
         else:
-            color = (80, 80, 80) if key == "block" else (120, 200, 120) if key else (35, 35, 35)
+            color = (80, 80, 80) if key == "block" else (120, 200, 120) if key else PLAYFIELD_BG_COLOR
             pygame.draw.rect(self.screen, color, rect)
 
     def _txt(self, t, x, y):
