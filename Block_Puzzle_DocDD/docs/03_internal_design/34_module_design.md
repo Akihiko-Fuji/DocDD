@@ -2,7 +2,7 @@
 
 - 文書ID: DOC-DSN-034
 - 文書名: モジュール設計 / Module Design
-- 最終更新日: 2026-03-23
+- 最終更新日: 2026-07-17
 - 対象プロジェクト: 仮称 `falling-block-puzzle`
 - 目的: 外部仕様を内部契約へ落とし込むために、各モジュールの責務、入出力、依存、公開契約、試験単位を定義する
 - 関連文書:
@@ -69,12 +69,15 @@ physical input
 | game_session | 盤面、スコア、現在状態の集約保持 | 初期設定、状態遷移要求、ルール処理結果 | 参照可能なセッション状態 | 各サービス |
 | spawn_service | 現在ピース出現、NEXT 補充、出現不能判定 | `GameSession`, 乱数 / 出現源, `randomizer_seed` | 新 current piece, game over event | `board_rules` |
 | active_piece_service | 移動・回転・ソフトドロップの適用 | `InputSnapshot`, `CurrentPiece`, `Board` | 更新後 `CurrentPiece`, 最終操作種別 | `board_rules` |
+| play_timing_service | 通常落下、ソフトドロップ、消去待ち、ARE の tick 進行 | `GameSession`, 論理入力保持状態 | 更新後カウンタ、落下要求、状態遷移要求 | `spawn_service`, `lock_resolver` |
 | board_rules | 盤面内判定、衝突判定、ライン完成判定 | `Board`, `CurrentPiece` | 真偽値、完成ライン一覧、更新後盤面 | なし |
 | lock_resolver | 接地・固定・固定後処理の進行 | `GameSession`, `CurrentPiece`, `Board` | 固定済み盤面、消去行数、固定イベント | `board_rules` |
 | tspin_detector | T-Spin 成立評価 | `CurrentPiece`, 最終操作, `Board`, 消去行数 | `TSpinResult` | `board_rules` |
 | scoring_service | 得点加算、表示上限処理 | `ScoreState`, 消去行数, `TSpinResult`, ソフトドロップ距離 | 更新後 `ScoreState` | なし |
 | level_progression_service | A-TYPE レベル更新、落下速度参照値計算 | `ScoreState`, 開始レベル | 更新後 `ScoreState`, 速度指標 | なし |
 | renderer | セッション状態から描画データ生成 | `GameSession`, UI 状態 | 描画命令 / view model | なし |
+
+> Python正本実装では、`spawn_service`、`lock_resolver`、`play_timing_service` のオーケストレーションを `game_session.SessionService` に集約している。契約上の責務境界は維持し、純粋な盤面・得点・回転処理は個別モジュールへ分離する。
 
 ---
 
@@ -113,6 +116,8 @@ physical input
   - `normalize_defaults(config) -> Config`
 - 契約要点
   - セッション集約として状態を保持するが、ルール計算そのものは外へ委譲する
+  - `create_new_game` は開始設定の確定時または再試行時だけ呼び、タイトルや開始設定の描画準備では呼ばない
+  - 乱数生成器の初期化と最初の current/NEXT 供給は新規ゲーム生成の一部として一度だけ行う
 - テスト観点
   - 初期化
   - リトライ時再初期化
@@ -123,6 +128,7 @@ physical input
   - `apply_player_actions(board, current_piece, input_snapshot) -> ActivePieceResult`
 - 契約要点
   - 回転・左右移動・ソフトドロップの結果と「最終成立操作」を返す
+  - 自動落下はプレイヤー操作として扱わず、最終成立操作を上書きしない
 - テスト観点
   - 左右移動
   - A/B 回転
@@ -145,6 +151,8 @@ physical input
   - `resolve_lock(session) -> LockResolution`
 - 契約要点
   - 固定、ライン消去、後続サービスに必要なイベントデータを生成する
+  - 固定直後に `current_piece` を空にし、消去ありなら `PL-CLEAR`、なしなら `PL-ARE` を開始する
+  - 次ピース生成は行わず、待機完了後の `spawn_service` に委譲する
 - テスト観点
   - 接地から固定への遷移
   - 固定後処理順序
@@ -187,9 +195,24 @@ physical input
 - 契約要点
   - Hold 枠や Hard drop 案内を生成してはならない
   - 必須表示要素を状態に応じて欠落させない
+  - 640×576の正本座標、最近傍変換、縦横比、Iピースの相対的な端部分類を `35_rendering_design.md` どおりに再現する
 - テスト観点
   - プレイ画面必須表示
   - ポーズ / ゲームオーバー表示
+
+### 5.11 play_timing_service
+- 公開契約
+  - `advance_play_tick(session, input_snapshot) -> TimingResult`
+- 契約要点
+  - 1 PLAY tickにつき該当するカウンタを最大1回だけ進める
+  - Down中は通常落下を停止し、独立した3 tick周期でソフトドロップを要求する
+  - 消去待ちとAREは直列に進め、開始した同一tickでは新しい待機カウンタを減算しない
+- テスト観点
+  - Down離放前後の通常落下残値
+  - 消去なし10 tick、消去あり20+10 tickの境界
+  - pause中の全進行カウンタ凍結
+- Python正本実装
+  - `game_session.SessionService.step_play` がこの契約を実装する
 
 ---
 
@@ -211,6 +234,7 @@ physical input
 | `24_piece_rotation_collision_spec.md` の回転・衝突 | `active_piece_service`, `board_rules` |
 | `23_scoring_level_spec.md` の得点・レベル | `tspin_detector`, `scoring_service`, `level_progression_service` |
 | `25_pause_gameover_resume_spec.md` の状態遷移 | `state_controller`, `game_session`, `renderer` |
+| `23a_timing_constants_spec.md` の落下・待機 | `play_timing_service`, `lock_resolver`, `spawn_service` |
 
 ---
 

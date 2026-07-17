@@ -1,15 +1,26 @@
 name: Block Puzzle tests
 
 on:
+  push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: block-puzzle-tests-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
     defaults:
       run:
         working-directory: Block_Puzzle_DocDD
@@ -25,7 +36,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: ${{ matrix.python-version }}
           cache: pip
           cache-dependency-path: Block_Puzzle_DocDD/requirements.txt
 
@@ -33,6 +44,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
+          python -m pip install "ruff>=0.12,<1"
+
+      - name: Check Python source
+        run: |
+          python -m compileall -q src tests
+          ruff check src tests
 
       - name: Run tests
         run: >-

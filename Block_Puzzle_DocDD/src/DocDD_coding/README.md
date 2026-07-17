@@ -17,7 +17,7 @@ python src/DocDD_coding/main.py
 ## テスト
 ```bash
 cd Block_Puzzle_DocDD
-python -m pytest tests/DocDD_coding
+python -m pytest tests/DocDD_coding src/DocDD_coding/test_tspin_lock_integration.py -q
 ```
 
 ## 実装済み範囲
@@ -53,4 +53,5 @@ python -m pytest tests/DocDD_coding
 
 ## 注意
 - 商用ゲーム複製を目的としません。
-- 外部著作物（画像/音声/フォント）を同梱しません。
+- 実行時に利用する画像は本教材用の同梱素材です。第三者フォントのTTFや商用ゲーム由来素材は同梱しません。
+- 素材の追加・再利用時は [`../../ASSETS.md`](../../ASSETS.md) の方針に従ってください。

@@ -101,8 +101,8 @@ psql -U results_user -d results_record_db -f results_record_db/ddl/ddl_results_r
 cd results_record_db
 python -m venv .venv
 source .venv/bin/activate
-pip install -U pip
-pip install pandas sqlalchemy "psycopg[binary]" streamlit pytest openpyxl
+python -m pip install -U pip
+python -m pip install -r requirements.txt
 ```
 
 #### Step 3 — Python ファイルの役割を把握する
@@ -122,6 +122,20 @@ pip install pandas sqlalchemy "psycopg[binary]" streamlit pytest openpyxl
   - CLI から対象 CSV を指定して取込を実行する入口
 - `src/streamlit_app.py`:
   - KPI 可視化画面（フィルタ、集計、CSV 出力）
+
+既定ではローカル教材用の接続先を使います。別の接続先を使う場合は、実行前に `RESULTS_DATABASE_URL` を設定してください。
+
+```bash
+export RESULTS_DATABASE_URL='postgresql+psycopg://USER:PASSWORD@HOST:5432/DBNAME'
+```
+
+PowerShellでは次のように設定します。
+
+```powershell
+$env:RESULTS_DATABASE_URL = 'postgresql+psycopg://USER:PASSWORD@HOST:5432/DBNAME'
+```
+
+> `results_pass` はローカル教材専用のデモ用パスワードです。共有環境や本番環境では別の強固な認証情報を使用してください。
 
 #### Step 4 — CLI で対象ファイルをアップロード（取込）する
 

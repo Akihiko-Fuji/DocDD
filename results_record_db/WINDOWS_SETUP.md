@@ -4,10 +4,10 @@
 
 対象は、Python や Streamlit にあまり慣れていない方です。
 
-本ドキュメントでは、できるだけ手順を簡単にするため、**Python 仮想環境は作成しません**。  
+本ドキュメントでは、できるだけ手順を簡単にするため、**Python 仮想環境は作成しません**。
 Windows にインストールした Python 環境へ、必要なライブラリを直接インストールします。
 
-> 補足: Pythonに慣れている方は仮想環境を使っても構いません。  
+> 補足: Pythonに慣れている方は仮想環境を使っても構いません。
 > ただし、このページでは「まず動かす」ことを優先します。
 
 ---
@@ -56,8 +56,7 @@ Windows で動かす場合、流れは次のとおりです。
 
 このページでは、主に 1〜4 と 7〜8 を説明します。
 
-PostgreSQL の準備は、  
-[`results_record_db_LOCAL_POSTGRESQL_SETUP.md`](./results_record_db_LOCAL_POSTGRESQL_SETUP.md)  
+PostgreSQL の準備は、[`results_record_db_LOCAL_POSTGRESQL_SETUP.md`](./results_record_db_LOCAL_POSTGRESQL_SETUP.md)
 を参照してください。
 
 ---
@@ -293,6 +292,12 @@ PostgreSQL の公式ダウンロードページはこちらです。
 postgresql+psycopg://results_user:results_pass@localhost:5432/results_record_db
 ```
 
+> `results_pass` はローカル教材専用のデモ用パスワードです。共有PC、社内サーバー、クラウド環境、本番環境では使用しないでください。接続先を変更する場合は、PowerShellで `RESULTS_DATABASE_URL` 環境変数を設定できます。
+
+```powershell
+$env:RESULTS_DATABASE_URL = 'postgresql+psycopg://USER:PASSWORD@HOST:5432/DBNAME'
+```
+
 ---
 
 ## 11. DDL を適用する
@@ -317,8 +322,7 @@ psql -U results_user -h localhost -d results_record_db -f ddl\ddl_results_record
 C:\Program Files\PostgreSQL\18\bin
 ```
 
-PATH設定の詳細は、  
-[`results_record_db_LOCAL_POSTGRESQL_SETUP.md`](./results_record_db_LOCAL_POSTGRESQL_SETUP.md)  
+PATH設定の詳細は、[`results_record_db_LOCAL_POSTGRESQL_SETUP.md`](./results_record_db_LOCAL_POSTGRESQL_SETUP.md)
 を参照してください。
 
 ---

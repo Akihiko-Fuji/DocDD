@@ -1,7 +1,7 @@
 # インターフェース契約 / Interface Contract
 
 - 文書ID: DOC-DSN-039
-- 最終更新日: 2026-03-24
+- 最終更新日: 2026-07-17
 - 目的: モジュール間で受け渡す主要インターフェースの引数型、戻り値、前提条件、事後条件を一覧化し、`34_module_design.md` の責務説明と `33_data_model.md` の型設計を橋渡しする
 - 関連文書:
   - `docs/03_internal_design/30_architecture_design.md`
@@ -41,6 +41,12 @@
 | IF-008 | scoring flow -> level_progression_service | `update_level(score_state, start_level) -> ScoreState` | レベル更新を適用する |
 | IF-009 | application -> renderer | `build_view_model(session, ui_message, next_visibility) -> ScreenViewModel` | 描画用 view model を生成する |
 | IF-010 | boot flow -> config loader | `load_config(path) -> ConfigLoadResult` | Config を読込・正規化する |
+| IF-011 | play loop -> play_timing_service | `advance_play_tick(session, input_snapshot) -> TimingResult` | 落下・消去待ち・AREを1 tick進める |
+| IF-012 | setup/retry flow -> game_session | `create_new_game(config) -> GameSession` | 乱数列と最初のピース供給を初期化する |
+
+### 2.1 Python正本実装への写像
+
+本書のシグネチャは責務を示す疑似コードである。現在のPython実装では、IF-011を `game_session.SessionService.step_play`、IF-012を `game_session.SessionService.new_play_session` として実装する。`spawn_service` と `lock_resolver` の契約も、Pythonでは同じ `SessionService` 内の `spawn_from_next` と `lock_piece` に写像する。
 
 ## 3. 契約詳細
 
@@ -93,6 +99,8 @@
 - 事後条件:
   - 回転失敗時に `current_piece` を部分更新しないこと
   - 同時入力規則が `36_input_timing_design.md` と一致すること
+  - A+B、Left+Right はそれぞれ相殺され、START が含まれる場合はプレイ操作を一切適用しないこと
+  - 自動落下によって最終成立プレイヤー操作を上書きしないこと
 
 ### 3.5 IF-005 `resolve_lock`
 - 引数:
@@ -103,6 +111,8 @@
   - 下移動不能がすでに観測されていること
 - 事後条件:
   - board 更新、completed lines 抽出、後続評価用データが揃っていること
+  - 固定後の `current_piece` は空であること
+  - 消去ありでは `line_clear_timer=20`、消去なしでは `are_timer=10` を設定し、設定した同一tickでは減算しないこと
 
 ### 3.6 IF-006 `evaluate_tspin`
 - 前提条件:
@@ -133,6 +143,8 @@
 - 事後条件:
   - 640×576 基準座標の `ScreenViewModel` を返すこと
   - ルール計算を新規実行しないこと
+  - 各セルへ資産種別と描画役割を付与し、Iピース端部を絶対座標ではなく4占有セル内の相対位置から決めること
+  - 資産の目標矩形、縦横比、最近傍変換が `35_rendering_design.md` と一致すること
 
 ### 3.10 IF-010 `load_config`
 - 戻り値:
@@ -140,6 +152,24 @@
 - 事後条件:
   - 不正 Config の部分適用を行わないこと
   - 継続可能なら正規化済み `Config` を返すこと
+
+### 3.11 IF-011 `advance_play_tick`
+- 前提条件:
+  - `input_snapshot.frame == session.frame`
+  - PLAY以外またはPAUSE中には呼ばないこと
+- 事後条件:
+  - 1 tickで進める待機カウンタは1種類だけであり、各カウンタを最大1回だけ減算すること
+  - Down保持中は `soft_drop_counter` のみを進め、`normal_fall_counter` を保存すること
+  - `line_clear_timer` の `1 -> 0` で行削除とARE開始を行い、新しいAREは次tickまで減算しないこと
+  - `are_timer` の `1 -> 0` でのみ次ピース出現を要求すること
+
+### 3.12 IF-012 `create_new_game`
+- 前提条件:
+  - 開始設定の確定またはゲームオーバーからの再試行イベントであること
+- 事後条件:
+  - seedから乱数状態を初期化し、currentとvisible NEXTに必要な回数だけ供給源を進めること
+  - 同一イベントで二重初期化・二重供給しないこと
+  - タイトルまたは開始設定を表示するだけの処理から呼ばれないこと
 
 ## 4. 受入観点
 

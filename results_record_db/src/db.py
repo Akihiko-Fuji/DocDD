@@ -18,7 +18,8 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from datetime import datetime
-from typing import Iterator, Optional
+import os
+from typing import Iterator, Mapping, Optional
 
 from sqlalchemy import (
     BigInteger,
@@ -34,10 +35,19 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 
-# 仕様合意: ローカル PostgreSQL 接続先は固定値を利用する。
-DATABASE_URL = (
+# 教材の最短実行用既定値。共有環境・本番環境では環境変数で上書きする。
+DEFAULT_LOCAL_DATABASE_URL = (
     "postgresql+psycopg://results_user:results_pass@localhost:5432/results_record_db"
 )
+
+
+def resolve_database_url(environ: Optional[Mapping[str, str]] = None) -> str:
+    """環境変数を優先し、未指定時だけローカル教材用URLを返す。"""
+    source = os.environ if environ is None else environ
+    return source.get("RESULTS_DATABASE_URL", DEFAULT_LOCAL_DATABASE_URL)
+
+
+DATABASE_URL = resolve_database_url()
 
 engine = create_engine(
     DATABASE_URL,
