@@ -70,6 +70,8 @@ UI 仕様で求める表示要素を、**添付の Game Boy 風参考画面を 6
 - `CELL_SIZE = 24`
 - `BOARD_ORIGIN_X = 96`, `BOARD_ORIGIN_Y = 72`
 - `SIDEBAR_X = 392`, `SIDEBAR_Y = 84`, `SIDEBAR_W = 170`, `SIDEBAR_H = 437`
+- 数値右端は `HUD_VALUE_RIGHT_X = SIDEBAR_X + 132` へ統一し、SCORE の最下位桁を見出しの `R` の下付近へ配置する
+- 数値上端は `SCORE = SIDEBAR_Y + 76`、`LEVEL = SIDEBAR_Y + 176`、`LINES = SIDEBAR_Y + 249` とし、LEVEL / LINES は各ラベル枠内の下段へ配置する
 - `NEXT_BOX_X = SIDEBAR_X + 31`, `NEXT_BOX_Y = SIDEBAR_Y + 300`, `NEXT_CELL_SIZE = 16`
 - `SETUP_LEVEL_Y = 494`, `SETUP_HELP_Y = 528`, `SETUP_BACK_Y = 552`
 
@@ -159,7 +161,8 @@ UI 仕様で求める表示要素を、**添付の Game Boy 風参考画面を 6
 ### 6.3 数値パネル
 - `SCORE`, `LEVEL`, `LINES` はこの順に縦積みで右側へ整列配置する
 - 参考画像に合わせ、各パネルは同寸法・同余白の繰り返しパターンとする
-- ラベルは上寄せ中央寄り、値は下段中央寄せを基本とし、Game Boy 風の「見出し + 数値」二段構成を維持する
+- ラベルは上寄せ中央寄り、値は各ラベル枠内の下段へ配置し、Game Boy 風の「見出し + 数値」二段構成を維持する
+- SCORE / LEVEL / LINES の値は共通の右端へ右揃えし、桁数が変化しても最下位桁の位置を動かさない
 - 数値更新はゲームロジックに追随するが、描画側で丸めや推定を行わない
 - 桁数上限は `23b_display_limits_spec.md` に従い SCORE=6 桁、LINES=3 桁、LEVEL=2 桁を前提にレイアウトを固定する
 
