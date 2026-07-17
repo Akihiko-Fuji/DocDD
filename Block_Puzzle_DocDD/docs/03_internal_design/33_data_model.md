@@ -1,7 +1,7 @@
 # データモデル設計 / Data Model Design
 
 - 文書ID: DOC-DSN-033
-- 最終更新日: 2026-03-24
+- 最終更新日: 2026-07-17
 - 関連文書:
   - `docs/02_external_spec/20_game_rules_spec.md`
   - `docs/02_external_spec/23_scoring_level_spec.md`
@@ -67,10 +67,11 @@
 - `rotation` は `0,1,2,3` のいずれかに限る
 - `occupied_offsets` は 4 セル分を保持し、各セルは同一座標を重複しない（正本値は `24a_piece_shape_spawn_spec.md`）
 - `occupied_offsets` を `origin_x`, `origin_y` に加算した結果は、評価対象時点で盤面境界判定可能でなければならない
+- 通常重力による自動落下は `last_successful_action` を変更しない。成功したプレイヤー移動・回転・ソフトドロップのみが変更でき、失敗操作も変更しない
 
 ### 4.3 CurrentPiece と PieceState の関係
 - Active piece は `CurrentPiece` という別名を用いてよいが、**構造正本は `PieceState` を共有**する
-- `CurrentPiece` は `PieceState + fall_timer + lock_pending` のような実行時補助属性を含むラッパとして扱う
+- `CurrentPiece` は `PieceState` を操作中ピースとして扱うラッパである。落下・待機タイマはピース個体ではなく `GameSession` の進行状態として保持する
 - これにより、固定前の現在ピースと replay / debug 用スナップショットで同一形状表現を再利用できる
 
 ### 4.4 NextQueue
@@ -110,11 +111,41 @@
 | `frame` | integer | セッション開始からのフレーム番号 |
 | `pause_reason` | optional enum | 手動停止など |
 | `randomizer_seed` | integer | 乱数再現用 seed |
+| `randomizer_state` | implementation-defined value | seed から導出した乱数生成器の現在状態 |
+| `normal_fall_counter` | integer | 通常落下までの残り tick |
+| `soft_drop_counter` | integer | Down 継続中の3 tick周期カウンタ |
+| `line_clear_timer` | integer | 消去演出待ちの残り tick |
+| `are_timer` | integer | 次ピース出現待ちの残り tick |
+| `line_clear_rows` | integer list | 演出後に削除する行番号。ライン消去待ち以外では空 |
 
 不変条件:
 - `state != ST-PLAY` のとき `play_substate` は `None` でもよい
 - `frame` は 0 起算の単調増加整数とする（frame=0 の起点は `23b_display_limits_spec.md` §6 に従う）
 - `state == ST-PLAY` のとき `board`, `next_queue`, `score_state` は必須とする
+- `PL-ACTIVE` では `current_piece` が必須、`PL-CLEAR` と `PL-ARE` では `current_piece == None` を必須とする
+- 全カウンタは0以上とし、`line_clear_timer > 0` と `are_timer > 0` が同時に成立してはならない
+- `PL-CLEAR` では `line_clear_timer > 0` かつ `line_clear_rows` が空でない。`PL-ARE` では `are_timer > 0` とする
+- タイトル、開始設定、ゲームオーバーの表示用初期化では乱数生成器を進めず、現在ピースや NEXT を生成しない。新規ゲーム確定時にのみ seed から乱数状態を初期化して最初の供給を行う
+
+### 4.6.1 固定済みセルの描画役割
+- I ピース由来セルは、固定時に `End` / `Center` の描画役割を BoardCell へ保存しても、同一固定イベントの4セルから描画時に導出してもよい
+- どちらの表現でも、長軸方向の両端2セルが `End`、中央2セルが `Center` となることを外部結果の正本とする
+- 役割を導出する場合は同一固定イベントを識別できる情報を保持し、隣接する別の I ピースと混同してはならない
+
+### 4.6.2 Python正本実装への写像
+
+本書の型名は言語非依存の契約名である。`src/DocDD_coding/` のPython実装では、次の簡略名で同じ責務を表現している。
+
+| 設計上の名称 | Python実装 |
+|---|---|
+| `current_piece` | `GameSession.current` |
+| `visible_next` / `NextQueue` | `GameSession.next_kind` |
+| `ScoreState` | `GameSession.score`, `lines`, `level` |
+| `normal_fall_counter` | `GameSession.fall_counter` |
+| `line_clear_timer`, `are_timer`, `line_clear_rows` | `GameSession` の同名属性 |
+| `randomizer_state` | `SessionService.rand` が保持する `PieceRandomizer` の内部状態 |
+
+`play_substate` は独立したenumとして保持せず、`current`, `line_clear_timer`, `are_timer` の排他的な組み合わせで表現する。これはPython正本実装上の写像であり、本文の不変条件を変更するものではない。
 
 ### 4.7 InputSnapshot
 | 項目 | 型 | 説明 |

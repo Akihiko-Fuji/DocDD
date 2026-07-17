@@ -1,11 +1,18 @@
 # DocDD
 
+[![Block Puzzle tests](https://github.com/Akihiko-Fuji/DocDD/actions/workflows/block-puzzle-tests.yml/badge.svg)](https://github.com/Akihiko-Fuji/DocDD/actions/workflows/block-puzzle-tests.yml)
+[![Results Record DB tests](https://github.com/Akihiko-Fuji/DocDD/actions/workflows/results-record-db-tests.yml/badge.svg)](https://github.com/Akihiko-Fuji/DocDD/actions/workflows/results-record-db-tests.yml)
+[![Repository quality](https://github.com/Akihiko-Fuji/DocDD/actions/workflows/repository-quality.yml/badge.svg)](https://github.com/Akihiko-Fuji/DocDD/actions/workflows/repository-quality.yml)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](./LICENSE)
+
 このリポジトリは、**[第2回　21世紀ＩＴＣクラブ　ＩＴＣスキルアップ・セミナー](https://21itc.net/seminar/20260725)** 及び **[中小企業診断士協会 生産革新フォーラム](https://pub.nikkan.co.jp/author/a10030845.html)**（MIF研究会）向けセミナー「**AIを用いたコード開発：仕様の粒度が成果物を決める**」  
 のために構成した教材・資料リポジトリです。
 
 主目的は、単にコードを作ることではなく、  
 **AI を用いた開発においても、仕様の粒度と文書の整理が成果物の質を決める**  
 ことを、実例を通して示すことにあります。
+
+現在は、2つの教材とも実装と自動テストを含む状態です。CIではブロックパズル40件、実績記録DB44件のテストに加え、Pythonの静的検査とリポジトリ内リンクの検査を実行します。
 
 
 ## AI時代にDocDDが必要になる理由
@@ -256,3 +263,42 @@ DocDD の構造理解用教材
 - [`results_record_db/results_record_db_LOCAL_POSTGRESQL_SETUP.md`](./results_record_db/results_record_db_LOCAL_POSTGRESQL_SETUP.md)
 - [`Block_Puzzle_DocDD/readme.md`](./Block_Puzzle_DocDD/readme.md)
 - [`Block_Puzzle_DocDD/docs/00_overview/00_document_map.md`](./Block_Puzzle_DocDD/docs/00_overview/00_document_map.md)
+
+---
+
+## 動作確認
+
+各教材は独立して実行できます。詳しい手順は、それぞれのQuick Startを参照してください。
+
+```bash
+# ブロックパズル
+cd Block_Puzzle_DocDD
+python -m pip install -r requirements.txt
+python -m pytest tests/DocDD_coding src/DocDD_coding/test_tspin_lock_integration.py -q
+
+# 実績記録DB
+cd ../results_record_db
+python -m pip install -r requirements.txt
+python -m pytest -q
+```
+
+- ブロックパズルの実行: [`Block_Puzzle_DocDD/quickstart.md`](./Block_Puzzle_DocDD/quickstart.md)
+- 実績記録DBの実行: [`results_record_db/quickstart.md`](./results_record_db/quickstart.md)
+- Windows環境の準備: [`results_record_db/WINDOWS_SETUP.md`](./results_record_db/WINDOWS_SETUP.md)
+
+## 公開範囲と注意事項
+
+- `results_record_db/sample_data/` は教材用に生成した架空データであり、実在する人物・受注・生産実績を表しません。
+- `results_pass` はローカル教材環境だけで使うデモ用パスワードです。共有環境や本番環境では使用しないでください。
+- 本リポジトリは教育用サンプルです。可用性、認証、監査、バックアップ等を追加せずに業務本番へ転用することは想定していません。
+- 落下ブロック教材は特定の商用ゲーム製品と提携・承認関係にありません。名称や商標は各権利者に帰属します。
+
+## コントリビューションとセキュリティ
+
+- 改善提案・変更手順: [`CONTRIBUTING.md`](./CONTRIBUTING.md)
+- 脆弱性の連絡方針: [`SECURITY.md`](./SECURITY.md)
+- 画像資産の取り扱い: [`Block_Puzzle_DocDD/ASSETS.md`](./Block_Puzzle_DocDD/ASSETS.md)
+
+## ライセンス
+
+コードと文書は、特記がない限り [Apache License 2.0](./LICENSE) の条件で公開しています。第三者の商標・製品名に対してライセンスを付与するものではありません。

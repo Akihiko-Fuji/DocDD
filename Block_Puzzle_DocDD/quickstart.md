@@ -95,7 +95,7 @@ python -m pip install -r requirements.txt
 
 ```bash
 cd Block_Puzzle_DocDD
-python -m pytest tests/DocDD_coding
+python -m pytest tests/DocDD_coding src/DocDD_coding/test_tspin_lock_integration.py -q
 ```
 
 #### Step 4 — 実装を起動する

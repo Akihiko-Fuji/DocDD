@@ -1,2 +1,2 @@
-pygame-ce
-pytest
+pygame-ce>=2.5,<3
+pytest>=8,<10
