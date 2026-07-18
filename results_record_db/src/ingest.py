@@ -109,6 +109,38 @@ class IngestPlan:
     rejects: List[RejectRecord]
 
 
+@dataclass(frozen=True)
+class SourceFileInfo:
+    """ファイル名から判定したログ種別と作業者名。"""
+
+    log_type: str
+    file_worker: Optional[str]
+
+
+@dataclass(frozen=True)
+class ParsedWorkLog:
+    """入力元固有の列を共通項目へ読み替えた1行分のデータ。"""
+
+    order_no: str
+    product_name: str
+    process_name: str
+    worker_name: str
+    start_ts: datetime
+    end_ts: datetime
+    result_cd: str
+    source_system: str
+
+
+class RowValidationError(ValueError):
+    """入力行を reject にする理由を呼び出し元へ伝える。"""
+
+    def __init__(self, code: str, detail: str, source_system: str) -> None:
+        super().__init__(detail)
+        self.code = code
+        self.detail = detail
+        self.source_system = source_system
+
+
 def load_order_product_master(path: Optional[str]) -> Dict[str, str]:
     """受注-製品マスタCSVを読み込み、必須列を検証して返す。"""
     if not path:
@@ -136,10 +168,7 @@ def load_order_product_master(path: Optional[str]) -> Dict[str, str]:
                 "" if product_name_raw is None else str(product_name_raw).strip()
             )
             if order_no and product_name:
-                result[order_no] = product_name
-                normalized_order_no = normalize_order_no(order_no)
-                if normalized_order_no and normalized_order_no not in result:
-                    result[normalized_order_no] = product_name
+                result[normalize_order_no(order_no)] = product_name
     return result
 
 
@@ -297,6 +326,260 @@ def _next_business_day(d: date) -> date:
     return cur
 
 
+def _detect_source_file(file_name: str) -> SourceFileInfo:
+    """ファイル名からログ種別とファイル名由来の作業者名を判定する。"""
+    match = FILENAME_WORKER_RE.match(file_name)
+    file_prefix = None
+    file_worker = None
+    if match:
+        if match.group(1):
+            file_prefix = match.group(1)
+            file_worker = normalize_worker_name(match.group(2))
+        else:
+            file_prefix = match.group(4)
+            file_worker = normalize_worker_name(match.group(5))
+
+    normalized_name = file_name.lower()
+    is_shipping = (
+        file_name.startswith("SHIPCHK_")
+        or normalized_name in LEGACY_SHIPPING_SAMPLE_NAMES
+    )
+    if is_shipping:
+        return SourceFileInfo("shipping", None)
+    if file_prefix == "INTASM":
+        return SourceFileInfo("internal", file_worker)
+    if file_prefix == "EXTASM":
+        return SourceFileInfo("external", file_worker)
+    raise ValueError(f"Unknown file naming: {file_name}")
+
+
+def _resolve_worker_name(
+    file_worker: Optional[str], row_worker: Optional[str], source_system: str
+) -> str:
+    """ファイル名と行データから作業者名を解決し、不一致を検出する。"""
+    normalized_row_worker = normalize_worker_name(row_worker)
+    if file_worker and normalized_row_worker and file_worker != normalized_row_worker:
+        raise RowValidationError(
+            REJECT_INVALID_WORKER_NAME,
+            "worker_name mismatch between file name and row",
+            source_system,
+        )
+    worker_name = normalize_worker_name(file_worker or normalized_row_worker)
+    if not worker_name:
+        raise RowValidationError(
+            REJECT_INVALID_WORKER_NAME,
+            "worker_name could not be resolved",
+            source_system,
+        )
+    return worker_name
+
+
+def _parse_internal_row(
+    raw: Dict[str, str],
+    file_worker: Optional[str],
+    order_product_map: Dict[str, str],
+) -> ParsedWorkLog:
+    """内装組立ログ1行を共通項目へ変換する。"""
+    process_name, source_system = PROCESS_BY_PREFIX["INTASM"]
+    order_no = normalize_order_no(raw.get("order_no"))
+    if not order_no:
+        raise RowValidationError(
+            REJECT_MISSING_REQUIRED, "order_no is empty", source_system
+        )
+
+    missing = _missing_required(
+        raw, ["start_date", "start_time", "end_date", "end_time"]
+    )
+    if missing:
+        raise RowValidationError(
+            REJECT_MISSING_REQUIRED, f"{missing} is empty", source_system
+        )
+    if str(raw.get("start_marker", "")).strip() != "START":
+        raise RowValidationError(
+            REJECT_MISSING_REQUIRED, "start_marker must be START", source_system
+        )
+    if str(raw.get("end_marker", "")).strip() != "END":
+        raise RowValidationError(
+            REJECT_MISSING_REQUIRED, "end_marker must be END", source_system
+        )
+
+    start_ts = _parse_datetime(
+        f"{raw['start_date']} {raw['start_time']}",
+        ["%Y-%m-%d %H:%M:%S", "%Y/%m/%d %H:%M:%S"],
+    )
+    end_ts = _parse_datetime(
+        f"{raw['end_date']} {raw['end_time']}",
+        ["%Y-%m-%d %H:%M:%S", "%Y/%m/%d %H:%M:%S"],
+    )
+    if not start_ts or not end_ts:
+        raise RowValidationError(
+            REJECT_DATE_PARSE_ERROR,
+            "failed to parse start/end timestamp",
+            source_system,
+        )
+
+    product_name = str(order_product_map.get(order_no, "")).strip()
+    if not product_name:
+        raise RowValidationError(
+            REJECT_MASTER_NOT_FOUND,
+            "product_name not found by order_no",
+            source_system,
+        )
+
+    return ParsedWorkLog(
+        order_no=order_no,
+        product_name=product_name,
+        process_name=process_name,
+        worker_name=_resolve_worker_name(
+            file_worker, raw.get("worker_name"), source_system
+        ),
+        start_ts=start_ts,
+        end_ts=end_ts,
+        result_cd="OK",
+        source_system=source_system,
+    )
+
+
+def _parse_external_row(
+    raw: Dict[str, str], file_worker: Optional[str]
+) -> ParsedWorkLog:
+    """外装組立ログ1行を共通項目へ変換する。"""
+    process_name, source_system = PROCESS_BY_PREFIX["EXTASM"]
+    order_no = normalize_order_no(raw.get("order_no"))
+    product_name = str(raw.get("product_name", "")).strip()
+    if not order_no or not product_name:
+        raise RowValidationError(
+            REJECT_MISSING_REQUIRED,
+            "order_no or product_name is empty",
+            source_system,
+        )
+    if not str(raw.get("qr_read_ts", "")).strip() or not str(
+        raw.get("all_clear_ts", "")
+    ).strip():
+        raise RowValidationError(
+            REJECT_MISSING_REQUIRED,
+            "qr_read_ts or all_clear_ts is empty",
+            source_system,
+        )
+
+    start_ts = _parse_datetime(raw["qr_read_ts"], ["%Y-%m-%d %H:%M:%S"])
+    end_ts = _parse_datetime(raw["all_clear_ts"], ["%Y-%m-%d %H:%M:%S"])
+    if not start_ts or not end_ts:
+        raise RowValidationError(
+            REJECT_DATE_PARSE_ERROR,
+            "failed to parse qr_read_ts/all_clear_ts",
+            source_system,
+        )
+    if str(raw.get("error_code", "")).strip():
+        raise RowValidationError(
+            REJECT_ERROR_CODE_PRESENT, "error_code must be empty", source_system
+        )
+
+    return ParsedWorkLog(
+        order_no=order_no,
+        product_name=product_name,
+        process_name=process_name,
+        worker_name=_resolve_worker_name(
+            file_worker, raw.get("worker_name"), source_system
+        ),
+        start_ts=start_ts,
+        end_ts=end_ts,
+        result_cd="OK",
+        source_system=source_system,
+    )
+
+
+def _parse_shipping_row(raw: Dict[str, str]) -> ParsedWorkLog:
+    """出荷検査ログ1行を共通項目へ変換する。"""
+    process_name = "出荷検査"
+    source_system = "shipping_inspection_tool"
+    order_no = normalize_order_no(raw.get("order_no"))
+    product_name = str(raw.get("product_name", "")).strip()
+    worker_name = normalize_worker_name(raw.get("inspector_name"))
+    if not order_no or not product_name or not worker_name:
+        raise RowValidationError(
+            REJECT_MISSING_REQUIRED,
+            "order_no/product_name/inspector_name is empty",
+            source_system,
+        )
+
+    missing = _missing_required(
+        raw, ["inspection_date", "start_time", "end_time", "ng_total"]
+    )
+    if missing:
+        raise RowValidationError(
+            REJECT_MISSING_REQUIRED, f"{missing} is empty", source_system
+        )
+
+    start_ts = _parse_datetime(
+        f"{raw['inspection_date']} {raw['start_time']}", ["%Y-%m-%d %H:%M:%S"]
+    )
+    end_ts = _parse_datetime(
+        f"{raw['inspection_date']} {raw['end_time']}", ["%Y-%m-%d %H:%M:%S"]
+    )
+    if not start_ts or not end_ts:
+        raise RowValidationError(
+            REJECT_DATE_PARSE_ERROR,
+            "failed to parse inspection timestamp",
+            source_system,
+        )
+    if end_ts < start_ts:
+        end_ts = datetime.combine(_next_business_day(start_ts.date()), end_ts.time())
+
+    try:
+        ng_total = int(str(raw["ng_total"]).strip())
+    except ValueError as exc:
+        raise RowValidationError(
+            REJECT_INVALID_RESULT_CD, "ng_total is not integer", source_system
+        ) from exc
+
+    return ParsedWorkLog(
+        order_no=order_no,
+        product_name=product_name,
+        process_name=process_name,
+        worker_name=worker_name,
+        start_ts=start_ts,
+        end_ts=end_ts,
+        result_cd="OK" if ng_total == 0 else "NG",
+        source_system=source_system,
+    )
+
+
+def _parse_source_row(
+    source: SourceFileInfo,
+    raw: Dict[str, str],
+    order_product_map: Dict[str, str],
+) -> ParsedWorkLog:
+    """判定済みログ種別に対応する行変換処理を呼び出す。"""
+    if source.log_type == "internal":
+        return _parse_internal_row(raw, source.file_worker, order_product_map)
+    if source.log_type == "external":
+        return _parse_external_row(raw, source.file_worker)
+    return _parse_shipping_row(raw)
+
+
+def _load_existing_keys(
+    session: Session, rows: Sequence[Tuple[int, Dict[str, str]]]
+) -> set[tuple[str, str]]:
+    """入力候補の受注番号に対応する既存の業務キーだけを取得する。"""
+    candidate_order_nos = set()
+    for _, raw in rows:
+        order_no = normalize_order_no(raw.get("order_no"))
+        if order_no:
+            candidate_order_nos.add(order_no)
+    existing_keys: set[tuple[str, str]] = set()
+    order_no_list = sorted(candidate_order_nos)
+    for start in range(0, len(order_no_list), 900):
+        chunk = order_no_list[start : start + 900]
+        existing_keys.update(
+            (row.order_no, row.process_name)
+            for row in session.query(WorkLog.order_no, WorkLog.process_name)
+            .filter(WorkLog.order_no.in_(chunk))
+            .all()
+        )
+    return existing_keys
+
+
 def _append_reject(
     rejects: List[RejectRecord],
     *,
@@ -329,296 +612,147 @@ def prepare_ingest_file(
     ingest_batch_id: Optional[str] = None,
     ingest_seq: int = 1,
 ) -> IngestPlan:
-    """単一ファイルの取り込み計画（候補/却下）を作成する。"""
-    order_product_map = order_product_map or {}
-    fp = Path(file_path)
+    """単一ファイルを検証し、DB登録候補とreject候補へ分ける。"""
+    master = order_product_map or {}
+    file_path_obj = Path(file_path)
     batch_id = _batch_id(ingest_seq, override=ingest_batch_id)
+    source = _detect_source_file(file_path_obj.name)
 
-    m = FILENAME_WORKER_RE.match(fp.name)
-    file_prefix = None
-    file_worker = None
-    if m:
-        if m.group(1):
-            file_prefix = m.group(1)
-            file_worker = normalize_worker_name(m.group(2))
-        else:
-            file_prefix = m.group(4)
-            file_worker = normalize_worker_name(m.group(5))
-
-    normalized_name = fp.name.lower()
-    if (
-        fp.name.startswith("SHIPCHK_")
-        or normalized_name in LEGACY_SHIPPING_SAMPLE_NAMES
-    ):
-        log_type = "shipping"
-    elif file_prefix == "INTASM":
-        log_type = "internal"
-    elif file_prefix == "EXTASM":
-        log_type = "external"
-    else:
-        raise ValueError(f"Unknown file naming: {fp.name}")
-
-    rejects: List[RejectRecord] = []
-    candidates: List[NormalizedWorkLogCandidate] = []
+    rows = list(_iter_input_rows(file_path_obj))
+    existing_keys = _load_existing_keys(session, rows)
     seen_keys: set[tuple[str, str]] = set()
-    rows = list(_iter_input_rows(fp))
-    candidate_order_nos = {
-        raw.get("order_no", "").strip()
-        for _, raw in rows
-        if raw.get("order_no", "").strip()
-    }
-    existing_keys = set()
-    if candidate_order_nos:
-        chunk_size = 900
-        order_no_list = sorted(candidate_order_nos)
-        for i in range(0, len(order_no_list), chunk_size):
-            chunk = order_no_list[i : i + chunk_size]
-            existing_keys.update(
-                {
-                    (row.order_no, row.process_name)
-                    for row in session.query(WorkLog.order_no, WorkLog.process_name)
-                    .filter(WorkLog.order_no.in_(chunk))
-                    .all()
-                }
-            )
+    candidates: List[NormalizedWorkLogCandidate] = []
+    rejects: List[RejectRecord] = []
 
-    # 仕様合意: existing_keys は (order_no, process_name) で評価するため、
-    # order_no ベースに候補抽出しても誤って別工程を重複扱いしない。
     for row_no, raw in rows:
-        # 仕様合意: row_no/raw を引数既定値で束縛し、遅延キャプチャを回避する。
-        def reject_row(
-            code: str,
-            detail: str,
-            current_source_system: Optional[str],
-            current_row_no: int = row_no,
-            current_raw: Dict[str, str] = raw,
-        ) -> None:
-            """現在行を reject として記録する。"""
+        try:
+            parsed = _parse_source_row(source, raw, master)
+
+            # 出荷検査の日跨ぎは個別変換時に補正済み。ここでは全ログ共通の
+            # 時刻・作業時間・重複ルールだけを評価する。
+            if parsed.end_ts < parsed.start_ts:
+                raise RowValidationError(
+                    REJECT_END_BEFORE_START,
+                    "end_ts before start_ts",
+                    parsed.source_system,
+                )
+            elapsed_sec = int((parsed.end_ts - parsed.start_ts).total_seconds())
+            work_sec = calc_work_sec(parsed.start_ts, parsed.end_ts)
+            if work_sec > elapsed_sec:
+                raise RowValidationError(
+                    REJECT_WORK_EXCEEDS_ELAPSED,
+                    "work_sec > elapsed_sec",
+                    parsed.source_system,
+                )
+
+            dedup_key = (parsed.order_no, parsed.process_name)
+            if dedup_key in existing_keys or dedup_key in seen_keys:
+                raise RowValidationError(
+                    REJECT_DUPLICATE_KEY,
+                    "UNIQUE(order_no, process_name) violation",
+                    parsed.source_system,
+                )
+        except RowValidationError as exc:
             _append_reject(
                 rejects,
-                source_system=current_source_system,
-                source_file_name=fp.name,
-                source_row_no=current_row_no,
-                reject_reason_cd=code,
-                reject_reason_detail=detail,
-                raw_payload=current_raw,
+                source_system=exc.source_system,
+                source_file_name=file_path_obj.name,
+                source_row_no=row_no,
+                reject_reason_cd=exc.code,
+                reject_reason_detail=exc.detail,
+                raw_payload=raw,
                 ingest_batch_id=batch_id,
             )
-
-        if log_type == "internal":
-            process_name, source_system = PROCESS_BY_PREFIX["INTASM"]
-            order_no = normalize_order_no(raw.get("order_no", ""))
-            if not order_no:
-                reject_row(REJECT_MISSING_REQUIRED, "order_no is empty", source_system)
-                continue
-            missing = _missing_required(
-                raw, ["start_date", "start_time", "end_date", "end_time"]
-            )
-            if missing:
-                reject_row(
-                    REJECT_MISSING_REQUIRED, f"{missing} is empty", source_system
-                )
-                continue
-            if str(raw.get("start_marker", "")).strip() != "START":
-                reject_row(
-                    REJECT_MISSING_REQUIRED, "start_marker must be START", source_system
-                )
-                continue
-            if str(raw.get("end_marker", "")).strip() != "END":
-                reject_row(
-                    REJECT_MISSING_REQUIRED, "end_marker must be END", source_system
-                )
-                continue
-            start_ts = _parse_datetime(
-                f"{raw['start_date']} {raw['start_time']}",
-                ["%Y-%m-%d %H:%M:%S", "%Y/%m/%d %H:%M:%S"],
-            )
-            end_ts = _parse_datetime(
-                f"{raw['end_date']} {raw['end_time']}",
-                ["%Y-%m-%d %H:%M:%S", "%Y/%m/%d %H:%M:%S"],
-            )
-            if not start_ts or not end_ts:
-                reject_row(
-                    REJECT_DATE_PARSE_ERROR,
-                    "failed to parse start/end timestamp",
-                    source_system,
-                )
-                continue
-            product_name = str(
-                order_product_map.get(order_no, "")
-                or order_product_map.get(normalize_order_no(order_no), "")
-            ).strip()
-            if not product_name:
-                reject_row(
-                    REJECT_MASTER_NOT_FOUND,
-                    "product_name not found by order_no",
-                    source_system,
-                )
-                continue
-            row_worker = normalize_worker_name(raw.get("worker_name", ""))
-            if file_worker and row_worker and file_worker != row_worker:
-                reject_row(
-                    REJECT_INVALID_WORKER_NAME,
-                    "worker_name mismatch between file name and row",
-                    source_system,
-                )
-                continue
-            worker_name = normalize_worker_name(file_worker or row_worker)
-            if not worker_name:
-                reject_row(
-                    REJECT_INVALID_WORKER_NAME,
-                    "worker_name could not be resolved",
-                    source_system,
-                )
-                continue
-            result_cd = "OK"
-        elif log_type == "external":
-            process_name, source_system = PROCESS_BY_PREFIX["EXTASM"]
-            order_no = normalize_order_no(raw.get("order_no", ""))
-            product_name = raw.get("product_name", "").strip()
-            if not order_no or not product_name:
-                reject_row(
-                    REJECT_MISSING_REQUIRED,
-                    "order_no or product_name is empty",
-                    source_system,
-                )
-                continue
-            if (
-                not raw.get("qr_read_ts", "").strip()
-                or not raw.get("all_clear_ts", "").strip()
-            ):
-                reject_row(
-                    REJECT_MISSING_REQUIRED,
-                    "qr_read_ts or all_clear_ts is empty",
-                    source_system,
-                )
-                continue
-            start_ts = _parse_datetime(raw["qr_read_ts"], ["%Y-%m-%d %H:%M:%S"])
-            end_ts = _parse_datetime(raw["all_clear_ts"], ["%Y-%m-%d %H:%M:%S"])
-            if not start_ts or not end_ts:
-                reject_row(
-                    REJECT_DATE_PARSE_ERROR,
-                    "failed to parse qr_read_ts/all_clear_ts",
-                    source_system,
-                )
-                continue
-            if raw.get("error_code", "").strip():
-                reject_row(
-                    REJECT_ERROR_CODE_PRESENT, "error_code must be empty", source_system
-                )
-                continue
-            row_worker = normalize_worker_name(raw.get("worker_name", ""))
-            if file_worker and row_worker and file_worker != row_worker:
-                reject_row(
-                    REJECT_INVALID_WORKER_NAME,
-                    "worker_name mismatch between file name and row",
-                    source_system,
-                )
-                continue
-            worker_name = normalize_worker_name(file_worker or row_worker)
-            if not worker_name:
-                reject_row(
-                    REJECT_INVALID_WORKER_NAME,
-                    "worker_name could not be resolved",
-                    source_system,
-                )
-                continue
-            result_cd = "OK"
-        else:
-            process_name, source_system = "出荷検査", "shipping_inspection_tool"
-            order_no = normalize_order_no(raw.get("order_no", ""))
-            product_name = raw.get("product_name", "").strip()
-            inspector = normalize_worker_name(raw.get("inspector_name", ""))
-            if not order_no or not product_name or not inspector:
-                reject_row(
-                    REJECT_MISSING_REQUIRED,
-                    "order_no/product_name/inspector_name is empty",
-                    source_system,
-                )
-                continue
-            missing = _missing_required(
-                raw, ["inspection_date", "start_time", "end_time", "ng_total"]
-            )
-            if missing:
-                reject_row(
-                    REJECT_MISSING_REQUIRED, f"{missing} is empty", source_system
-                )
-                continue
-            start_ts = _parse_datetime(
-                f"{raw['inspection_date']} {raw['start_time']}", ["%Y-%m-%d %H:%M:%S"]
-            )
-            end_ts = _parse_datetime(
-                f"{raw['inspection_date']} {raw['end_time']}", ["%Y-%m-%d %H:%M:%S"]
-            )
-            if not start_ts or not end_ts:
-                reject_row(
-                    REJECT_DATE_PARSE_ERROR,
-                    "failed to parse inspection timestamp",
-                    source_system,
-                )
-                continue
-            # 出荷検査のみ: end_time < start_time は日付跨ぎとして翌営業日へ補正し、reject しない。
-            if end_ts < start_ts:
-                end_ts = datetime.combine(
-                    _next_business_day(start_ts.date()), end_ts.time()
-                )
-                assert end_ts >= start_ts, "shipping end_ts correction must be non-decreasing"
-            try:
-                ng_total = int(str(raw["ng_total"]).strip())
-            except ValueError:
-                reject_row(
-                    REJECT_INVALID_RESULT_CD, "ng_total is not integer", source_system
-                )
-                continue
-            result_cd = "OK" if ng_total == 0 else "NG"
-            worker_name = inspector
-
-        # 仕様合意: 出荷検査の end<start は翌営業日に補正済み。ここは主に内装/外装向けガード。
-        if end_ts < start_ts:
-            reject_row(REJECT_END_BEFORE_START, "end_ts before start_ts", source_system)
-            continue
-        elapsed_sec = int((end_ts - start_ts).total_seconds())
-        work_sec = calc_work_sec(start_ts, end_ts)
-        # 仕様合意: calc_work_sec は elapsed_sec を超えない前提だが、将来変更に備えて防御する。
-        if work_sec > elapsed_sec:
-            reject_row(
-                REJECT_WORK_EXCEEDS_ELAPSED, "work_sec > elapsed_sec", source_system
-            )
             continue
 
-        # セミナー向け実装として、重複は事前チェック+UNIQUE制約例外捕捉で扱う（同時実行競合は許容）。
-        dedup_key = (order_no, process_name)
-        if dedup_key in existing_keys or dedup_key in seen_keys:
-            reject_row(
-                REJECT_DUPLICATE_KEY,
-                "UNIQUE(order_no, process_name) violation",
-                source_system,
-            )
-            continue
         seen_keys.add(dedup_key)
         candidates.append(
             NormalizedWorkLogCandidate(
-                order_no=order_no,
-                product_name=product_name,
-                process_name=process_name,
-                worker_name=worker_name,
-                start_ts=start_ts,
-                end_ts=end_ts,
+                order_no=parsed.order_no,
+                product_name=parsed.product_name,
+                process_name=parsed.process_name,
+                worker_name=parsed.worker_name,
+                start_ts=parsed.start_ts,
+                end_ts=parsed.end_ts,
                 elapsed_sec=elapsed_sec,
                 work_sec=work_sec,
-                result_cd=result_cd,
-                source_system=source_system,
-                source_file_name=fp.name,
+                result_cd=parsed.result_cd,
+                source_system=parsed.source_system,
+                source_file_name=file_path_obj.name,
                 source_row_no=row_no,
                 ingest_batch_id=batch_id,
                 raw_payload_json=json.dumps(raw, ensure_ascii=False),
             )
         )
+
     return IngestPlan(
-        source_file_name=fp.name,
+        source_file_name=file_path_obj.name,
         ingest_batch_id=batch_id,
         candidates=candidates,
         rejects=rejects,
+    )
+
+
+def _work_log_from_candidate(candidate: NormalizedWorkLogCandidate) -> WorkLog:
+    """正規化済み候補をORMモデルへ変換する。"""
+    return WorkLog(
+        order_no=candidate.order_no,
+        product_name=candidate.product_name,
+        process_name=candidate.process_name,
+        worker_name=candidate.worker_name,
+        start_ts=candidate.start_ts,
+        end_ts=candidate.end_ts,
+        elapsed_sec=candidate.elapsed_sec,
+        work_sec=candidate.work_sec,
+        result_cd=candidate.result_cd,
+        source_system=candidate.source_system,
+        source_file_name=candidate.source_file_name,
+        source_row_no=candidate.source_row_no,
+        ingest_batch_id=candidate.ingest_batch_id,
+    )
+
+
+def _reject_from_candidate(
+    candidate: NormalizedWorkLogCandidate, code: str, detail: str
+) -> RejectRecord:
+    """DB登録に失敗した候補からrejectレコードを作る。"""
+    return RejectRecord(
+        source_system=candidate.source_system,
+        source_file_name=candidate.source_file_name,
+        source_row_no=candidate.source_row_no,
+        reject_reason_cd=code,
+        reject_reason_detail=detail,
+        raw_payload_json=candidate.raw_payload_json,
+        ingest_batch_id=candidate.ingest_batch_id,
+    )
+
+
+def _is_duplicate_integrity_error(exc: IntegrityError) -> bool:
+    """PostgreSQL / SQLite の一意制約違反を同じ基準で判定する。"""
+    original = getattr(exc, "orig", None)
+    detail = str(original or exc).lower()
+    sqlstate = getattr(original, "pgcode", None)
+    return (
+        sqlstate == "23505"
+        or "duplicate key" in detail
+        or "unique constraint failed: work_log.order_no, work_log.process_name"
+        in detail
+        or "uq_work_log_order_no_process_name" in detail
+    )
+
+
+def _persist_reject(session: Session, reject: RejectRecord) -> None:
+    """rejectレコードをORMモデルへ変換してセッションへ追加する。"""
+    session.add(
+        WorkLogReject(
+            source_system=reject.source_system,
+            source_file_name=reject.source_file_name,
+            source_row_no=reject.source_row_no,
+            reject_reason_cd=reject.reject_reason_cd,
+            reject_reason_detail=reject.reject_reason_detail,
+            raw_payload_json=reject.raw_payload_json,
+            ingest_batch_id=reject.ingest_batch_id,
+        )
     )
 
 
@@ -626,80 +760,32 @@ def apply_ingest_plan(session: Session, plan: IngestPlan) -> IngestResult:
     """取り込み計画をDBへ反映し、結果件数を返す。"""
     inserted = 0
     rejects = list(plan.rejects)
-    for c in plan.candidates:
-        obj = WorkLog(
-            order_no=c.order_no,
-            product_name=c.product_name,
-            process_name=c.process_name,
-            worker_name=c.worker_name,
-            start_ts=c.start_ts,
-            end_ts=c.end_ts,
-            elapsed_sec=c.elapsed_sec,
-            work_sec=c.work_sec,
-            result_cd=c.result_cd,
-            source_system=c.source_system,
-            source_file_name=c.source_file_name,
-            source_row_no=c.source_row_no,
-            ingest_batch_id=c.ingest_batch_id,
-        )
+    for candidate in plan.candidates:
         try:
             with session.begin_nested():
-                session.add(obj)
+                session.add(_work_log_from_candidate(candidate))
                 session.flush()
                 inserted += 1
         except IntegrityError as exc:
-            orig = getattr(exc, "orig", None)
-            detail = str(orig or exc)
-            lower_detail = detail.lower()
-            sqlstate = getattr(orig, "pgcode", None)
-            is_duplicate = (
-                sqlstate == "23505"
-                or "duplicate key" in lower_detail
-                or "unique constraint failed: work_log.order_no, work_log.process_name"
-                in lower_detail
-                or "uq_work_log_order_no_process_name" in lower_detail
-            )
+            is_duplicate = _is_duplicate_integrity_error(exc)
             code = REJECT_DUPLICATE_KEY if is_duplicate else REJECT_DB_CONSTRAINT_ERROR
-            reject_detail = (
+            detail = (
                 "UNIQUE(order_no, process_name) violation"
-                if code == REJECT_DUPLICATE_KEY
-                else detail
+                if is_duplicate
+                else str(getattr(exc, "orig", None) or exc)
             )
-            rejects.append(
-                RejectRecord(
-                    c.source_system,
-                    c.source_file_name,
-                    c.source_row_no,
-                    code,
-                    reject_detail,
-                    c.raw_payload_json,
-                    c.ingest_batch_id,
-                )
-            )
+            rejects.append(_reject_from_candidate(candidate, code, detail))
         except SQLAlchemyError as exc:
             rejects.append(
-                RejectRecord(
-                    c.source_system,
-                    c.source_file_name,
-                    c.source_row_no,
+                _reject_from_candidate(
+                    candidate,
                     REJECT_DB_CONSTRAINT_ERROR,
                     str(exc),
-                    c.raw_payload_json,
-                    c.ingest_batch_id,
                 )
             )
-    for r in rejects:
-        session.add(
-            WorkLogReject(
-                source_system=r.source_system,
-                source_file_name=r.source_file_name,
-                source_row_no=r.source_row_no,
-                reject_reason_cd=r.reject_reason_cd,
-                reject_reason_detail=r.reject_reason_detail,
-                raw_payload_json=r.raw_payload_json,
-                ingest_batch_id=r.ingest_batch_id,
-            )
-        )
+
+    for reject in rejects:
+        _persist_reject(session, reject)
     session.flush()
     session.commit()
     return IngestResult(
