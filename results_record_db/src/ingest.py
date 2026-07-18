@@ -56,6 +56,10 @@ PROCESS_BY_PREFIX = {
     "INTASM": ("内装組立", "internal_assembly_tool"),
     "EXTASM": ("外装組立", "external_assembly_tool"),
 }
+WORK_LOG_BUSINESS_KEY_CONSTRAINT = "uq_work_log_order_no_process_name"
+SQLITE_BUSINESS_KEY_ERROR = (
+    "unique constraint failed: work_log.order_no, work_log.process_name"
+)
 # セミナー専用互換: 旧教材サンプル名を許容するための暫定ホワイトリスト。
 # 本番転用時は削除し、SHIPCHK_* 命名規則のみを受け付けること。
 LEGACY_SHIPPING_SAMPLE_NAMES = {
@@ -728,16 +732,22 @@ def _reject_from_candidate(
 
 
 def _is_duplicate_integrity_error(exc: IntegrityError) -> bool:
-    """PostgreSQL / SQLite の一意制約違反を同じ基準で判定する。"""
+    """業務キー ``(order_no, process_name)`` の一意制約違反だけを判定する。"""
     original = getattr(exc, "orig", None)
     detail = str(original or exc).lower()
-    sqlstate = getattr(original, "pgcode", None)
+    diagnostic = getattr(original, "diag", None)
+    constraint_name = getattr(diagnostic, "constraint_name", None)
+
+    # PostgreSQLではSQLSTATE 23505だけでは主キー等との区別がつかないため、
+    # psycopgが返す制約名を必ず照合する。
+    if constraint_name:
+        return constraint_name == WORK_LOG_BUSINESS_KEY_CONSTRAINT
+
+    # SQLiteは制約名ではなく対象列をエラーメッセージに含める。
+    # 一部ドライバ向けに、業務キー制約名が本文にある場合も許容する。
     return (
-        sqlstate == "23505"
-        or "duplicate key" in detail
-        or "unique constraint failed: work_log.order_no, work_log.process_name"
-        in detail
-        or "uq_work_log_order_no_process_name" in detail
+        SQLITE_BUSINESS_KEY_ERROR in detail
+        or WORK_LOG_BUSINESS_KEY_CONSTRAINT in detail
     )
 
 
