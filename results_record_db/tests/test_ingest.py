@@ -5,12 +5,15 @@ from datetime import datetime
 from pathlib import Path
 
 import pytest
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from db import WorkLog, WorkLogReject
 from ingest import (
     REJECT_DB_CONSTRAINT_ERROR,
+    WORK_LOG_BUSINESS_KEY_CONSTRAINT,
     _batch_id,
+    _is_duplicate_integrity_error,
     _next_business_day,
     apply_ingest_plan,
     calc_work_sec,
@@ -21,11 +24,63 @@ from ingest import (
 )
 
 
+class _FakePostgresDiagnostic:
+    def __init__(self, constraint_name: str) -> None:
+        self.constraint_name = constraint_name
+
+
+class _FakePostgresUniqueError(Exception):
+    pgcode = "23505"
+
+    def __init__(self, constraint_name: str) -> None:
+        super().__init__(f'duplicate key violates constraint "{constraint_name}"')
+        self.diag = _FakePostgresDiagnostic(constraint_name)
+
+
 def test_order_no_keeps_business_key_characters() -> None:
     """ハイフンと英字大小は業務キーの一部として保持する。"""
     assert normalize_order_no("  ORD-260105-001  ") == "ORD-260105-001"
     assert normalize_order_no("ord-260105-001") == "ord-260105-001"
     assert normalize_order_no("ORD260105001") != normalize_order_no("ORD-260105-001")
+
+
+def test_duplicate_classifier_accepts_postgres_business_key_constraint() -> None:
+    """PostgreSQLの業務キー制約違反だけをduplicateとして扱う。"""
+    error = IntegrityError(
+        "INSERT INTO work_log ...",
+        {},
+        _FakePostgresUniqueError(WORK_LOG_BUSINESS_KEY_CONSTRAINT),
+    )
+    assert _is_duplicate_integrity_error(error) is True
+
+
+def test_duplicate_classifier_rejects_other_postgres_unique_constraint() -> None:
+    """主キー等の23505を業務上のduplicateへ誤分類しない。"""
+    error = IntegrityError(
+        "INSERT INTO work_log ...",
+        {},
+        _FakePostgresUniqueError("work_log_pkey"),
+    )
+    assert _is_duplicate_integrity_error(error) is False
+
+
+def test_duplicate_classifier_accepts_sqlite_business_key_columns() -> None:
+    """SQLiteの業務キー列を示す一意制約違反をduplicateとして扱う。"""
+    original = Exception(
+        "UNIQUE constraint failed: work_log.order_no, work_log.process_name"
+    )
+    error = IntegrityError("INSERT INTO work_log ...", {}, original)
+    assert _is_duplicate_integrity_error(error) is True
+
+
+def test_duplicate_classifier_rejects_generic_duplicate_message() -> None:
+    """制約を特定できないduplicate文言だけでは業務キー違反とみなさない。"""
+    error = IntegrityError(
+        "INSERT INTO work_log ...",
+        {},
+        Exception("duplicate key value violates an unspecified unique constraint"),
+    )
+    assert _is_duplicate_integrity_error(error) is False
 
 
 def test_internal_start_marker_reject(session: Session, tmp_path: Path, write_csv) -> None:
