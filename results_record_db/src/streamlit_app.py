@@ -18,9 +18,10 @@ from __future__ import annotations
 
 import hashlib
 import tempfile
+from contextlib import contextmanager
 from datetime import date
 from pathlib import Path
-from typing import List
+from typing import Iterator, List, Sequence
 
 import altair as alt
 import pandas as pd
@@ -34,7 +35,7 @@ from ingest import apply_ingest_plan, load_order_product_master, prepare_ingest_
 
 PROCESS_FLOW: List[str] = ["内装組立", "外装組立", "出荷検査"]
 STAGNATION_PAIRS = [("内装組立", "外装組立"), ("外装組立", "出荷検査")]
-REQUIRED_COLUMNS = {
+WORK_LOG_COLUMNS = [
     "order_no",
     "product_name",
     "process_name",
@@ -44,7 +45,16 @@ REQUIRED_COLUMNS = {
     "elapsed_sec",
     "work_sec",
     "result_cd",
-}
+]
+REQUIRED_COLUMNS = set(WORK_LOG_COLUMNS)
+INGEST_STATE_KEYS = [
+    "ingest_plan",
+    "ingest_uploaded_bytes",
+    "ingest_plan_name",
+    "ingest_batch_id",
+    "ingest_source_fingerprint",
+    "ingest_apply_in_progress",
+]
 SAMPLE_FILE_RENAME_MAP = {
     "internal_assembly_log.csv": "INTASM_YamadaTaro_202601.csv",
     "internal_assembly_log_invalid.csv": "INTASM_YamadaTaro_202602.csv",
@@ -75,15 +85,24 @@ def _uploaded_fingerprint(uploaded) -> tuple[str, str] | None:
 
 def _clear_ingest_state() -> None:
     """取込関連のセッション状態を初期化する。"""
-    for key in [
-        "ingest_plan",
-        "ingest_uploaded_bytes",
-        "ingest_plan_name",
-        "ingest_batch_id",
-        "ingest_source_fingerprint",
-        "ingest_apply_in_progress",
-    ]:
+    for key in INGEST_STATE_KEYS:
         st.session_state.pop(key, None)
+
+
+def _normalize_upload_name(file_name: str) -> str:
+    """教材の旧サンプル名を現行命名へ読み替え、ファイル名部分を返す。"""
+    original_name = Path(file_name).name
+    mapped_name = SAMPLE_FILE_RENAME_MAP.get(original_name.lower(), original_name)
+    return Path(mapped_name).name or "upload.csv"
+
+
+@contextmanager
+def _temporary_upload(file_name: str, content: bytes) -> Iterator[Path]:
+    """共通取込処理へ渡す内容を一時ファイルとして提供する。"""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        path = Path(tmpdir) / _normalize_upload_name(file_name)
+        path.write_bytes(content)
+        yield path
 
 
 def _load_order_product_master() -> dict[str, str]:
@@ -103,20 +122,25 @@ def _to_csv_bytes(df: pd.DataFrame) -> bytes:
 
 def _empty_work_log_df() -> pd.DataFrame:
     """work_log 相当の空 DataFrame を返す。"""
-    cols = [
-        "order_no",
-        "product_name",
-        "process_name",
-        "worker_name",
-        "start_ts",
-        "end_ts",
-        "elapsed_sec",
-        "work_sec",
-        "result_cd",
-        "work_date",
-        "hour_bucket",
-    ]
-    return pd.DataFrame(columns=cols)
+    return pd.DataFrame(columns=[*WORK_LOG_COLUMNS, "work_date", "hour_bucket"])
+
+
+def _filter_work_logs(
+    df: pd.DataFrame,
+    start_date: date,
+    end_date: date,
+    selected_process: Sequence[str],
+    selected_workers: Sequence[str],
+) -> pd.DataFrame:
+    """KPI1/KPI3共通の期間・工程・作業者フィルタを適用する。"""
+    if df.empty or not selected_process or not selected_workers:
+        return df.iloc[0:0].copy()
+    return df[
+        (df["work_date"] >= start_date)
+        & (df["work_date"] <= end_date)
+        & (df["process_name"].isin(selected_process))
+        & (df["worker_name"].isin(selected_workers))
+    ].copy()
 
 
 def build_kpi1(
@@ -127,13 +151,10 @@ def build_kpi1(
     selected_workers: list[str],
 ) -> pd.DataFrame:
     """KPI1（工程別・時間帯別作業件数）を作成する。"""
-    filtered = df[
-        (df["work_date"] >= start_date)
-        & (df["work_date"] <= end_date)
-        & (df["process_name"].isin(selected_process))
-        & (df["worker_name"].isin(selected_workers))
-    ].copy()
-    if filtered.empty or not selected_process or not selected_workers:
+    filtered = _filter_work_logs(
+        df, start_date, end_date, selected_process, selected_workers
+    )
+    if filtered.empty:
         return pd.DataFrame(
             columns=["hour_slot", "hour_order", "process_name", "work_count"]
         )
@@ -246,12 +267,9 @@ def build_kpi3(
     selected_workers: list[str],
 ) -> pd.DataFrame:
     """KPI3（作業者別・日別実績）を作成する。"""
-    filtered = df[
-        (df["work_date"] >= start_date)
-        & (df["work_date"] <= end_date)
-        & (df["process_name"].isin(selected_process))
-        & (df["worker_name"].isin(selected_workers))
-    ].copy()
+    filtered = _filter_work_logs(
+        df, start_date, end_date, selected_process, selected_workers
+    )
     if filtered.empty:
         return pd.DataFrame(
             columns=["work_date", "process_name", "worker_name", "work_count"]
@@ -271,9 +289,8 @@ def _load_work_log_df() -> pd.DataFrame:
     """DB の work_log を画面表示用 DataFrame として読み込む。"""
     try:
         with get_session() as session:
-            # 取得列が固定かつ短いため、可読性を優先して SQL は 1 行で記載する。
             df = pd.read_sql(
-                text("SELECT order_no, product_name, process_name, worker_name, start_ts, end_ts, elapsed_sec, work_sec, result_cd FROM work_log"),
+                text(f"SELECT {', '.join(WORK_LOG_COLUMNS)} FROM work_log"),
                 session.get_bind(),
             )
     except (SQLAlchemyError, ValueError) as exc:
@@ -302,22 +319,20 @@ def _run_import_tab() -> None:
 
     if uploaded and st.button("検証・プレビュー", type="primary"):
         try:
-            with tempfile.TemporaryDirectory() as tmpdir:
-                original_name = Path(uploaded.name).name
-                normalized_name = original_name.lower()
-                mapped_name = SAMPLE_FILE_RENAME_MAP.get(normalized_name, original_name)
-                safe_name = Path(mapped_name).name or "upload.csv"
-                p = Path(tmpdir) / safe_name
-                p.write_bytes(uploaded.getvalue())
-                st.session_state["ingest_uploaded_bytes"] = uploaded.getvalue()
-                st.session_state["ingest_plan_name"] = safe_name
+            uploaded_bytes = uploaded.getvalue()
+            upload_name = _normalize_upload_name(uploaded.name)
+            with _temporary_upload(upload_name, uploaded_bytes) as upload_path:
                 with get_session() as session:
                     plan = prepare_ingest_file(
-                        session, str(p), order_product_map=_load_order_product_master()
+                        session,
+                        str(upload_path),
+                        order_product_map=_load_order_product_master(),
                     )
-                st.session_state["ingest_plan"] = plan
-                st.session_state["ingest_batch_id"] = plan.ingest_batch_id
-                st.session_state["ingest_source_fingerprint"] = current_fp
+            st.session_state["ingest_uploaded_bytes"] = uploaded_bytes
+            st.session_state["ingest_plan_name"] = upload_name
+            st.session_state["ingest_plan"] = plan
+            st.session_state["ingest_batch_id"] = plan.ingest_batch_id
+            st.session_state["ingest_source_fingerprint"] = current_fp
             st.success("検証が完了しました")
         except (SQLAlchemyError, ValueError, OSError, ImportError) as exc:
             _clear_ingest_state()
@@ -343,12 +358,10 @@ def _run_import_tab() -> None:
                 st.session_state["ingest_apply_in_progress"] = True
                 with get_session() as session:
                     # prepare/apply を同一トランザクションで再実行して重複判定の一貫性を確保する。
-                    with tempfile.TemporaryDirectory() as tmpdir:
-                        p = Path(tmpdir) / Path(safe_name).name
-                        p.write_bytes(uploaded_bytes)
+                    with _temporary_upload(safe_name, uploaded_bytes) as upload_path:
                         fresh_plan = prepare_ingest_file(
                             session,
-                            str(p),
+                            str(upload_path),
                             order_product_map=_load_order_product_master(),
                             ingest_batch_id=st.session_state.get("ingest_batch_id"),
                         )
@@ -492,6 +505,20 @@ def _run_kpi3_tab(
     st.dataframe(kpi3, width="stretch", height=420)
 
 
+def _resolve_date_range(
+    selected_range: object, default_start: date, default_end: date
+) -> tuple[date, date]:
+    """Streamlitの日付入力値を必ず開始日・終了日の組へ揃える。"""
+    if isinstance(selected_range, tuple):
+        if len(selected_range) == 2:
+            return selected_range[0], selected_range[1]
+        if len(selected_range) == 1:
+            return selected_range[0], selected_range[0]
+    if isinstance(selected_range, date):
+        return selected_range, selected_range
+    return default_start, default_end
+
+
 def main() -> None:
     """ダッシュボード画面全体を初期化して描画する。"""
     if not _is_streamlit_runtime():
@@ -507,14 +534,7 @@ def main() -> None:
     date_range = st.date_input(
         "期間", value=(min_date, max_date), min_value=min_date, max_value=max_date
     )
-    if isinstance(date_range, tuple) and len(date_range) == 2:
-        start_date, end_date = date_range
-    elif isinstance(date_range, tuple) and len(date_range) == 1:
-        start_date = end_date = date_range[0]
-    elif isinstance(date_range, date):
-        start_date = end_date = date_range
-    else:
-        start_date, end_date = min_date, max_date
+    start_date, end_date = _resolve_date_range(date_range, min_date, max_date)
     selected_process = st.multiselect(
         "工程", options=PROCESS_FLOW, default=PROCESS_FLOW
     )
