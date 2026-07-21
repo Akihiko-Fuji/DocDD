@@ -292,16 +292,42 @@ AIと共に実装仕様の検討を進めていくのが良いです。
 
 | reject 理由コード | 内容 |
 |---|---|
-| `MISSING_REQUIRED` | 必須列欠損 |
+| `MISSING_REQUIRED` | 必須列欠損、必須値空、または内装組立ログの `START` / `END` マーカー不一致 |
 | `DATE_PARSE_ERROR` | 日付変換失敗 |
 | `END_BEFORE_START` | `end_ts < start_ts` |
 | `WORK_EXCEEDS_ELAPSED` | `work_sec > elapsed_sec` |
 | `INVALID_RESULT_CD` | `result_cd` が未定義値 |
 | `ERROR_CODE_PRESENT` | 外装組立ログの `error_code` が空でない |
-| `INVALID_WORKER_NAME` | `worker_name` をファイル名/行データから解決できない |
+| `INVALID_WORKER_NAME` | 内装・外装ログの任意列 `worker_name` が、ファイル名から抽出した作業者名と正規化後に一致しない |
 | `DUPLICATE_KEY` | `UNIQUE (order_no, process_name)` 違反 |
 | `MASTER_NOT_FOUND` | `order_no` に対応する `product_name` が補助マスタに存在しない |
 | `DB_CONSTRAINT_ERROR` | `DUPLICATE_KEY` 以外のDB登録エラー（CHECK、NOT NULL、型、長さの制約違反を含む） |
+
+#### reject理由の判定優先順位
+
+1入力行が複数の異常条件に該当した場合は、最初に成立した1件だけを `reject_reason_cd` として記録する。同じ行に複数のrejectレコードは作成しない。
+
+| 優先順位 | 判定 | 採用するreject理由 | 適用対象 |
+|---:|---|---|---|
+| 1 | 業務キー・必須値の欠損、内装組立のマーカー不一致 | `MISSING_REQUIRED` | 全ログ |
+| 2 | 開始・終了日時のパース失敗 | `DATE_PARSE_ERROR` | 全ログ |
+| 3 | 補助マスタ未登録 | `MASTER_NOT_FOUND` | 内装組立 |
+| 3 | `error_code` が空でない | `ERROR_CODE_PRESENT` | 外装組立 |
+| 3 | `ng_total` を整数へ変換できない | `INVALID_RESULT_CD` | 出荷検査 |
+| 4 | 任意列 `worker_name` とファイル名由来作業者の不一致 | `INVALID_WORKER_NAME` | 内装組立・外装組立 |
+| 5 | 補正対象外の `end_ts < start_ts` | `END_BEFORE_START` | 内装組立・外装組立 |
+| 6 | `work_sec > elapsed_sec` | `WORK_EXCEEDS_ELAPSED` | 全ログ |
+| 7 | 事前重複判定で業務キーが一致 | `DUPLICATE_KEY` | 全ログ |
+| 8 | DB登録時のUNIQUE制約違反 | `DUPLICATE_KEY` | 全ログ |
+| 8 | DB登録時のUNIQUE制約以外のエラー | `DB_CONSTRAINT_ERROR` | 全ログ |
+
+同じ優先順位3の条件はログ種別ごとに排他的であり、1行で相互に競合しない。出荷検査の `end_ts < start_ts` は翌営業日補正の対象であり、`END_BEFORE_START` を採用しない。
+
+| 複合同時エラーの例 | 採用するreject理由 | 理由 |
+|---|---|---|
+| `order_no` が空、かつ日付形式が不正 | `MISSING_REQUIRED` | 必須値判定を日時パースより先に行う |
+| 外装組立で `end_ts < start_ts`、かつ `error_code` が空でない | `ERROR_CODE_PRESENT` | 外装固有の `error_code` 判定を共通時刻整合性判定より先に行う |
+| 事前重複判定に該当し、DB制約違反の可能性もある | `DUPLICATE_KEY` | 重複と判定した行はDB登録を実行しない |
 
 #### 業務異常（reject しない）
 
@@ -494,6 +520,7 @@ INTASM_YamadaTaro_202601.csv
 | `end_time` | TIME相当文字列 | ○ | 作業終了時刻 |
 | `end_marker` | 文字列 | ○ | `END` 固定 |
 | `order_no` | 文字列 | ○ | 受注No. |
+| `worker_name` | 文字列 | × | 任意の互換列。値がある場合はファイル名由来の作業者名と照合する |
 
 #### 採用列 / 捨て列 / 変換ルール
 
@@ -503,6 +530,7 @@ INTASM_YamadaTaro_202601.csv
 | 採用 | `start_date` + `start_time` | `start_ts` | 連結して TIMESTAMP 化 |
 | 採用 | `end_date` + `end_time` | `end_ts` | 連結して TIMESTAMP 化 |
 | 補完 | ファイル名 | `worker_name` | ファイル名規則から抽出 |
+| 検証 | 任意列 `worker_name` | `worker_name` | 値がある場合は空白正規化後にファイル名由来値と比較し、不一致を `INVALID_WORKER_NAME` とする |
 | 補完 | ファイル名 | `process_name` | `内装組立` を固定付与 |
 | 補完 | ファイル名 | `source_system` | `internal_assembly_tool` を固定付与 |
 | 変換 | `start_ts`, `end_ts` | `elapsed_sec` | 単純差分秒を計算 |
@@ -525,6 +553,7 @@ INTASM_YamadaTaro_202601.csv
 - `end_marker <> 'END'`
 - 日時変換失敗
 - `end_ts < start_ts`
+- 任意列 `worker_name` に値があり、空白正規化後の値がファイル名由来の作業者名と一致しない
 - `UNIQUE (order_no, process_name)` 違反
 
 ---
@@ -541,6 +570,7 @@ INTASM_YamadaTaro_202601.csv
 
 列数が多いログでも、KPIに必要な情報が多いとは限らない。
 目的から必要列を選ぶ一方、異常調査に必要な元データはreject側へ残す。
+外装組立の `error_code` は製品品質の合否ではなく、設備・処理が正常完了しなかった状態を表す前提とする。出荷検査の `ng_total` のように `OK / NG` へ変換できる品質判定ではないため、`result_cd = NG` へ丸めず `ERROR_CODE_PRESENT` としてrejectする。
 
 **教材コメント**
 
@@ -576,6 +606,7 @@ EXTASM_SatoKen_202601.csv
 | `tehai_no` | 文字列 | △ | 生産手配No. |
 | `order_no` | 文字列 | ○ | 受注No. |
 | `product_name` | 文字列 | ○ | 製品名 |
+| `worker_name` | 文字列 | × | 任意の互換列。値がある場合はファイル名由来の作業者名と照合する |
 | `width_mm` | 数値 | △ | 製品幅 |
 | `height_mm` | 数値 | △ | 製品丈 |
 | `material_code1` 〜 `material_code6` | 文字列 | × | 資材コード |
@@ -597,6 +628,7 @@ EXTASM_SatoKen_202601.csv
 | 採用 | `qr_read_ts` | `start_ts` | DATETIME 変換 |
 | 採用 | `all_clear_ts` | `end_ts` | DATETIME 変換 |
 | 補完 | ファイル名 | `worker_name` | ファイル名規則から抽出 |
+| 検証 | 任意列 `worker_name` | `worker_name` | 値がある場合は空白正規化後にファイル名由来値と比較し、不一致を `INVALID_WORKER_NAME` とする |
 | 補完 | 固定値 | `process_name` | `外装組立` を固定付与 |
 | 補完 | 固定値 | `source_system` | `external_assembly_tool` を固定付与 |
 | 変換 | `start_ts`, `end_ts` | `elapsed_sec` | 単純差分秒を計算 |
@@ -625,6 +657,7 @@ EXTASM_SatoKen_202601.csv
 - 日時変換失敗
 - `end_ts < start_ts`
 - `error_code` が空でない（値の種別によらず一律 reject）
+- 任意列 `worker_name` に値があり、空白正規化後の値がファイル名由来の作業者名と一致しない
 - `UNIQUE (order_no, process_name)` 違反
 
 ---
@@ -662,6 +695,11 @@ SHIPCHK_202601.csv
 ```
 
 `worker_name` は列 `inspector_name` から取得する（ファイル名補完不要）。
+
+出荷検査ログでは、inspection_date + end_time が inspection_date + start_time より前になる場合、  
+翌営業日の終了時刻として扱う。土日および 2026-01-12 は営業日から除外する。  
+これは検査記録の運用上、日付欄が開始日基準で記録されるケースを想定した補正であり、  
+内装組立・外装組立には適用しない。
 
 #### サンプル列名
 
@@ -746,6 +784,25 @@ SHIPCHK_202601.csv
 | `result_cd` | `OK`（固定） | `error_code` から判定 | `ng_total` から判定 |
 | `source_system` | `internal_assembly_tool` | `external_assembly_tool` | `shipping_inspection_tool` |
 
+#### 日時パース形式
+
+日時パースで許容する形式を以下に限定する。対象値が必須値として空の場合は `MISSING_REQUIRED`、値が存在して形式に一致しない場合は `DATE_PARSE_ERROR` とする。
+
+| ログ | 対象列 | 許容形式 |
+|---|---|---|
+| 内装組立 | `start_date` / `end_date` | `YYYY-MM-DD` または `YYYY/MM/DD` |
+| 内装組立 | `start_time` / `end_time` | `HH:MM:SS` |
+| 外装組立 | `qr_read_ts` / `all_clear_ts` | `YYYY-MM-DD HH:MM:SS` |
+| 出荷検査 | `inspection_date` | `YYYY-MM-DD` |
+| 出荷検査 | `start_time` / `end_time` | `HH:MM:SS` |
+
+- 年は4桁とする。
+- 月・日・時・分・秒は1桁または2桁を受理する。ゼロ埋めは推奨表記だが、パース条件にはしない。
+- 秒は必須とし、`HH:MM` は受理しない。
+- 小数秒、タイムゾーン、末尾の `Z`、ISO 8601の `T` 区切りは受理しない。
+- 生成される `start_ts` / `end_ts` はタイムゾーン情報を持たないnaive datetimeとする。
+- 外装組立の `production_date_yymmdd` は `YYMMDD` 形式だが、`start_ts` / `end_ts` の生成には使用しない。
+
 ---
 
 ## 6. 取込処理の設計方針
@@ -802,7 +859,7 @@ SHIPCHK_202601.csv
 **仕様**
 
 - `sample_data/generate_sample_data.py` を生成物の正本とし、固定乱数シードで再現可能にする。
-- 19営業日、日別175〜275台の範囲で、3工程に同じ `order_no` を1回ずつ生成する。
+- 19営業日、日別175〜275台を設計上の許容範囲とし、3工程に同じ `order_no` を1回ずつ生成する。
 - 正常3工程、補助マスタ、期待結果CSVの製番集合を一致させる。
 
 **解説**
@@ -902,6 +959,12 @@ ORD-260106-002,VT-80X200-LG
 | `end_time` が `start_time` より前（時刻逆転） | `END_BEFORE_START` |
 | 同一 `order_no` の行を2行記録（重複） | `DUPLICATE_KEY` |
 
+**解説**
+
+`start_marker` / `end_marker` の不一致は値の欠損ではないが、本教材では理由コードを増やさず、必須マーカー条件を満たさない入力として `MISSING_REQUIRED` にまとめる。空値との違いは `reject_reason_detail` の `start_marker must be START` / `end_marker must be END` で識別する。
+
+**仕様**
+
 #### 外装組立ログに混ぜる不正パターン
 
 | 元ログ上の誤り | 期待する reject 理由コード |
@@ -911,7 +974,7 @@ ORD-260106-002,VT-80X200-LG
 | `qr_read_ts` に不正値（例: `2026/99/05 09:00:00`） | `DATE_PARSE_ERROR` |
 | `all_clear_ts` が `qr_read_ts` より前（時刻逆転） | `END_BEFORE_START` |
 | `error_code` に値あり（例: `E001`） | `ERROR_CODE_PRESENT` |
-| 列ズレにより `order_no` 列に製品名が入っている | `DATE_PARSE_ERROR` 等 |
+| 列ズレにより `order_no` 列に製品名が入っている | `order_no` の値だけではrejectしない。列ズレで `qr_read_ts` / `all_clear_ts` が日時不正になった場合は `DATE_PARSE_ERROR`、必須値が空になった場合は `MISSING_REQUIRED` |
 
 #### 出荷検査ログに混ぜる不正パターン
 
@@ -945,7 +1008,7 @@ ORD-260106-002,VT-80X200-LG
 
 - 生成スクリプトを実行して正常CSV、異常CSV、補助マスタ、期待結果CSVをまとめて生成する。
 - 生成後に件数、製番集合、工程順、日別範囲、再現性を検証する。
-- 現行生成値は19営業日、日別194〜244台、総4,321製番とする。
+- 現行生成値は19営業日、日別194〜244台、総4,321製番とする。この194〜244台は、設計上の許容範囲175〜275台に収まる固定生成結果である。
 
 **解説**
 
@@ -1121,7 +1184,7 @@ export RESULTS_DATABASE_URL='postgresql+psycopg://USER:PASSWORD@HOST:5432/DBNAME
 
 **仕様**
 
-`work_sec` は、`start_ts` から `end_ts` の間に含まれる **稼働時間帯のみ** を積算した秒数とする。  
+`work_sec` は、`start_ts` から `end_ts` の間に含まれる **稼働時間帯のみ** を積算した秒数とする。稼働時間帯は半開区間 `[08:00, 12:00)` と `[13:00, 17:00)` とし、開始境界を含み終了境界を含まない。  
 以下のルールを固定する。
 
 | 条件 | 扱い |
@@ -1154,7 +1217,9 @@ export RESULTS_DATABASE_URL='postgresql+psycopg://USER:PASSWORD@HOST:5432/DBNAME
 
 ただし、`end_ts < start_ts` は reject とする。
 
-**教材コメント**
+**仕様**
+
+以下の期待値は `calc_work_sec` の受入条件とする。
 
 #### 具体例
 
@@ -1164,6 +1229,12 @@ export RESULTS_DATABASE_URL='postgresql+psycopg://USER:PASSWORD@HOST:5432/DBNAME
 | 2026-01-05 07:50 | 2026-01-05 08:10 | 1200 | 600 | 08:00 前は非稼働時間として控除 |
 | 2026-01-05 16:50 | 2026-01-05 17:10 | 1200 | 600 | 17:00 後は非稼働時間として控除 |
 | 2026-01-05 12:10 | 2026-01-05 12:40 | 1800 | 0 | 全時間帯が昼休み |
+| 2026-01-05 08:00 | 2026-01-05 09:00 | 3600 | 3600 | 全時間帯が稼働時間内 |
+| 2026-01-05 07:30 | 2026-01-05 08:30 | 3600 | 1800 | 08:00前の30分を除外 |
+| 2026-01-05 11:30 | 2026-01-05 12:30 | 3600 | 1800 | 12:00以降の30分を昼休みとして除外 |
+| 2026-01-05 16:30 | 2026-01-05 17:30 | 3600 | 1800 | 17:00以降の30分を除外 |
+| 2026-01-10 08:00 | 2026-01-10 09:00 | 3600 | 0 | 土曜日は非稼働日 |
+| 2026-01-12 08:00 | 2026-01-12 09:00 | 3600 | 0 | 固定祝日は非稼働日 |
 
 **仕様**
 
@@ -1197,7 +1268,9 @@ KPI1 は `end_ts` の時間帯（`08:00`〜`17:00`）で件数を集計するた
 
 内装組立・外装組立ログでは、`worker_name` はファイル名から抽出する。
 
-加えて、行データ側に `worker_name` 列が存在する場合は、正規化後にファイル名由来の値と一致していることを必須とし、不一致は `INVALID_WORKER_NAME` で reject する。
+加えて、行データ側に `worker_name` 列が存在し、空白正規化後の値が空でない場合は、ファイル名由来の値との一致を必須とし、不一致は `INVALID_WORKER_NAME` で reject する。
+
+標準の内装組立・外装組立CSVは `worker_name` 列を持たない。この判定は、任意の互換列 `worker_name` を含む拡張入力に対する整合性ガードであり、標準サンプルでは発火しない。ファイル名が規則に一致せず作業者名を抽出できない場合は、行単位の `INVALID_WORKER_NAME` ではなく、ファイル単位の入力エラーとして取込を開始しない。
 
 対象パターン:
 
@@ -1638,6 +1711,16 @@ KPI定義と現場実測による妥当性確認については、
 開発初期指示と最終仕様を併記することで、文書から実装へ具体化する過程を示す。
 KPI2は工程間待ちと次工程内作業を混在させない。
 
+**教材コメント**
+
+Streamlit画面は、利用者が実際に見て理解しやすいかを確認しながら改善する領域である。本教材では、初期表示項目と最低限の確認条件を定め、実装後にトライアンドエラーで見せ方を改善する過程も学習対象に含める。ただし、画面改善によってKPIの意味を変更してはならない。
+
+**仕様**
+
+- データ処理、KPIの計算定義、出力元データ、集計粒度は画面改善の対象外とし、本節の仕様どおりに固定する。
+- 色、余白、説明文、グラフの高さは、KPIの値、フィルタ条件、CSV出力内容を変更しない範囲で変更を許容する。
+- タブ構成、フィルタの意味、0件時の挙動、CSVファイル名を変更する場合は、実装変更と同時に本節の最終仕様を更新する。
+
 **仕様**
 
 この節は、**開発初期ドキュメント段階の指示**と、`src/streamlit_app.py` による**最終仕様**（実装を正とした仕様）を区別して記載する。  
@@ -1723,6 +1806,8 @@ KPI2は工程間待ちと次工程内作業を混在させない。
 - 出力は推移（折れ線）と明細（表）を分け、CSV は以下の2種類。
   - `kpi2_stagnation_trend.csv`
   - `kpi2_stagnation_detail.csv`
+
+KPI1とKPI2の時間窓は、評価対象が異なるため一致させない。KPI1は完了イベントを時刻の「時」で集計し、`17:00 <= end_ts < 18:00` の完了イベントを17:00枠へ含める。KPI2は稼働時間内の状態を15分間隔の評価時点で観測し、半開区間 `[08:00, 17:00)` を使用するため、最終評価時点は16:45となり17:00は含めない。
 
 #### KPI3（作業者別日別実績）
 
@@ -2117,7 +2202,3 @@ DocDDで重要なのは文書量ではなく、何を正とし、何をもって
 
 「誰がどう回すか」を固定するための定義。  
 本テーマでは、CLI / Web の入口を分けつつロジックは共通化すること、ローカル PostgreSQL で検証できること、デモは事前検証済み版で行うことが相当する。
-出荷検査ログでは、inspection_date + end_time が inspection_date + start_time より前になる場合、  
-翌営業日の終了時刻として扱う。土日および 2026-01-12 は営業日から除外する。  
-これは検査記録の運用上、日付欄が開始日基準で記録されるケースを想定した補正であり、  
-内装組立・外装組立には適用しない。
