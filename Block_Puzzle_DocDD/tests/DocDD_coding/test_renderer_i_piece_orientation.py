@@ -52,10 +52,11 @@ def test_active_i_piece_assigns_outward_end_caps_for_both_axes():
 def test_next_i_piece_draws_horizontal_end_center_center_end_sequence():
     renderer = _renderer_without_display()
     drawn_cells = []
-    renderer._draw_cell = (
-        lambda x, y, size, key, angle=0: drawn_cells.append((key, angle))
-    )
 
+    def record_draw_cell(_x, _y, _size, key, angle=0):
+        drawn_cells.append((key, angle))
+
+    renderer._draw_cell = record_draw_cell
     renderer._draw_next_piece("I")
 
     assert drawn_cells == [
