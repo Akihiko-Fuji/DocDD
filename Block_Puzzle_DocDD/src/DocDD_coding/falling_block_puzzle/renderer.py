@@ -5,7 +5,16 @@ from pathlib import Path
 import pygame
 from typing import Optional
 
-from .constants import SCREEN_WIDTH, SCREEN_HEIGHT
+from .constants import (
+    I_CENTER_HORIZONTAL,
+    I_CENTER_VERTICAL,
+    I_END_BOTTOM,
+    I_END_LEFT,
+    I_END_RIGHT,
+    I_END_TOP,
+    SCREEN_HEIGHT,
+    SCREEN_WIDTH,
+)
 from .pieces import occupied_cells, spawn_piece
 from .models import GameState
 
@@ -106,7 +115,7 @@ class Renderer:
         self.big_font = pygame.font.SysFont(None, 40)
         self.asset_errors: list[str] = []
         self.assets = self._load_assets()
-        self.scaled_assets: dict[tuple[str, int, int], pygame.Surface] = {}
+        self.transformed_assets: dict[tuple[str, int, int, int], pygame.Surface] = {}
 
         font_root = Path(__file__).resolve().parents[3] / "art" / "fontset"
         self.bitmap_font = BitmapFont(font_root)
@@ -144,16 +153,27 @@ class Renderer:
                 self.asset_errors.append(f"ASSET_DECODE_ERROR:{key}:{path}:{exc}")
         return loaded
 
-    def _scaled_asset(self, key: str, size: tuple[int, int]) -> Optional[pygame.Surface]:
-        """同一サイズの変換結果を再利用し、毎フレームの画像変換を避ける。"""
+    def _transformed_asset(
+        self,
+        key: str,
+        size: tuple[int, int],
+        angle: int = 0,
+    ) -> Optional[pygame.Surface]:
+        """同一サイズ・向きの変換結果を再利用し、毎フレームの画像変換を避ける。"""
         source = self.assets.get(key)
         if source is None:
             return None
-        cache_key = (key, size[0], size[1])
-        if cache_key not in self.scaled_assets:
-            # ピクセルアートは補間でぼかさず、輪郭を維持する。
-            self.scaled_assets[cache_key] = pygame.transform.scale(source, size)
-        return self.scaled_assets[cache_key]
+        normalized_angle = angle % 360
+        cache_key = (key, size[0], size[1], normalized_angle)
+        if cache_key not in self.transformed_assets:
+            # 90度単位の回転と最近傍拡縮だけを使い、ピクセルアートの輪郭を維持する。
+            transformed = pygame.transform.rotate(source, normalized_angle)
+            self.transformed_assets[cache_key] = pygame.transform.scale(transformed, size)
+        return self.transformed_assets[cache_key]
+
+    def _scaled_asset(self, key: str, size: tuple[int, int]) -> Optional[pygame.Surface]:
+        """回転しない既存アセット向けの互換ヘルパー。"""
+        return self._transformed_asset(key, size)
 
     def draw(self, s):
         self._draw_background_for_state(s.state)
@@ -221,16 +241,25 @@ class Renderer:
                 if y in s.line_clear_rows and s.line_clear_timer > 0 and (s.line_clear_timer // 3) % 2 == 0:
                     self._draw_cell(ox + x * c, oy + y * c, c, None)
                     continue
-                self._draw_cell(ox + x * c, oy + y * c, c, self._board_cell_asset_key(v))
+                key, angle = self._board_cell_sprite(v)
+                self._draw_cell(ox + x * c, oy + y * c, c, key, angle)
 
         if s.current:
             current_cells = occupied_cells(s.current)
             for x, y in current_cells:
+                key, angle = self._active_cell_sprite(
+                    s.current.kind,
+                    s.current.rotation,
+                    x,
+                    y,
+                    current_cells,
+                )
                 self._draw_cell(
                     ox + x * c,
                     oy + y * c,
                     c,
-                    self._active_cell_asset_key(s.current.kind, s.current.rotation, x, y, current_cells),
+                    key,
+                    angle,
                 )
 
         if "sidebar" in self.assets:
@@ -269,45 +298,68 @@ class Renderer:
         origin_y = NEXT_PIECE_CENTER_Y - (piece_h // 2)
 
         for x, y in cells:
+            key, angle = self._active_cell_sprite(kind, 0, x, y, cells)
             self._draw_cell(
                 origin_x + (x - min_x) * NEXT_CELL_SIZE,
                 origin_y + (y - min_y) * NEXT_CELL_SIZE,
                 NEXT_CELL_SIZE,
-                self._active_cell_asset_key(kind, 0, x, y, cells),
+                key,
+                angle,
             )
 
 
-    def _board_cell_asset_key(self, value: int) -> Optional[str]:
+    def _board_cell_sprite(self, value: int) -> tuple[Optional[str], int]:
         if not value:
-            return None
+            return None, 0
         kind_to_asset = {"T": "brick1", "J": "brick2", "L": "brick3", "O": "brick3", "S": "brick4", "Z": "brick6"}
-        if value == 5:
-            return "brick5center"
-        if value == 6:
-            return "brick5end"
-        return kind_to_asset.get(chr(value), "block")
+        i_cell_sprites = {
+            I_CENTER_HORIZONTAL: ("brick5center", 90),
+            I_END_LEFT: ("brick5end", 90),
+            I_END_RIGHT: ("brick5end", -90),
+            I_CENTER_VERTICAL: ("brick5center", 0),
+            I_END_TOP: ("brick5end", 0),
+            I_END_BOTTOM: ("brick5end", 180),
+        }
+        if value in i_cell_sprites:
+            return i_cell_sprites[value]
+        return kind_to_asset.get(chr(value), "block"), 0
 
-    def _active_cell_asset_key(
+    def _active_cell_sprite(
         self,
         kind: str,
         rotation: int,
         x: int,
         y: int,
         cells: list[tuple[int, int]],
-    ) -> str:
+    ) -> tuple[str, int]:
         kind_to_asset = {"T": "brick1", "J": "brick2", "L": "brick3", "O": "brick3", "S": "brick4", "Z": "brick6"}
         if kind != "I":
-            return kind_to_asset.get(kind, "active")
+            return kind_to_asset.get(kind, "active"), 0
         if rotation % 2 == 0:
             xs = [cell_x for cell_x, _ in cells]
-            return "brick5end" if x in (min(xs), max(xs)) else "brick5center"
+            if x == min(xs):
+                return self._board_cell_sprite(I_END_LEFT)
+            if x == max(xs):
+                return self._board_cell_sprite(I_END_RIGHT)
+            return self._board_cell_sprite(I_CENTER_HORIZONTAL)
         ys = [cell_y for _, cell_y in cells]
-        return "brick5end" if y in (min(ys), max(ys)) else "brick5center"
+        if y == min(ys):
+            return self._board_cell_sprite(I_END_TOP)
+        if y == max(ys):
+            return self._board_cell_sprite(I_END_BOTTOM)
+        return self._board_cell_sprite(I_CENTER_VERTICAL)
 
-    def _draw_cell(self, x: int, y: int, size: int, key: Optional[str]):
+    def _draw_cell(
+        self,
+        x: int,
+        y: int,
+        size: int,
+        key: Optional[str],
+        angle: int = 0,
+    ) -> None:
         rect = pygame.Rect(x, y, size - 1, size - 1)
         if key and key in self.assets:
-            cell = self._scaled_asset(key, (size - 1, size - 1))
+            cell = self._transformed_asset(key, (size - 1, size - 1), angle)
             self.screen.blit(cell, rect.topleft)
         else:
             color = (80, 80, 80) if key == "block" else (120, 200, 120) if key else PLAYFIELD_BG_COLOR
