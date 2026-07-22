@@ -2,7 +2,7 @@
 
 - 文書ID: DOC-SPC-027
 - 文書名: 画像データ仕様 / Image Asset Data Specification
-- 最終更新日: 2026-07-17
+- 最終更新日: 2026-07-22
 - 対象プロジェクト: 仮称 `falling-block-puzzle`
 - 目的: 画面表示に使用する画像データ（fontset / artwork）のファイル形式、配置、命名、利用境界を外部仕様として定義する
 - 関連文書:
