@@ -1,5 +1,15 @@
 from src.DocDD_coding.falling_block_puzzle.game_session import SessionService
-from src.DocDD_coding.falling_block_puzzle.constants import ARE_FRAMES, LINE_CLEAR_DELAY, SOFT_DROP_INTERVAL
+from src.DocDD_coding.falling_block_puzzle.constants import (
+    ARE_FRAMES,
+    I_CENTER_HORIZONTAL,
+    I_CENTER_VERTICAL,
+    I_END_BOTTOM,
+    I_END_LEFT,
+    I_END_RIGHT,
+    I_END_TOP,
+    LINE_CLEAR_DELAY,
+    SOFT_DROP_INTERVAL,
+)
 from src.DocDD_coding.falling_block_puzzle.models import GameSession, PieceState
 
 
@@ -68,7 +78,27 @@ def test_moved_i_piece_keeps_end_tiles_at_relative_ends_when_locked():
     svc.lock_piece(s)
 
     occupied = [(x, value) for x, value in enumerate(s.board[15]) if value]
-    assert occupied == [(5, 6), (6, 5), (7, 5), (8, 6)]
+    assert occupied == [
+        (5, I_END_LEFT),
+        (6, I_CENTER_HORIZONTAL),
+        (7, I_CENTER_HORIZONTAL),
+        (8, I_END_RIGHT),
+    ]
+
+
+def test_vertical_i_piece_keeps_top_center_and_bottom_roles_when_locked():
+    svc = SessionService(0)
+    s = GameSession(current=PieceState("I", 4, 13, rotation=1), next_kind="O")
+
+    svc.lock_piece(s)
+
+    occupied = [(y, s.board[y][5]) for y in range(18) if s.board[y][5]]
+    assert occupied == [
+        (13, I_END_TOP),
+        (14, I_CENTER_VERTICAL),
+        (15, I_CENTER_VERTICAL),
+        (16, I_END_BOTTOM),
+    ]
 
 
 def test_line_clear_wait_is_followed_by_are_before_spawn():

@@ -16,7 +16,16 @@ from .tspin_detector import is_tspin
 from .scoring_service import line_clear_points, apply_score
 from .level_progression_service import calc_level
 from .constants import ARE_FRAMES, FRAMES_PER_ROW, SOFT_DROP_INTERVAL, BOARD_HEIGHT, BOARD_WIDTH
-from .constants import LINE_CLEAR_DELAY, TSPIN_FLASH_FRAMES
+from .constants import (
+    I_CENTER_HORIZONTAL,
+    I_CENTER_VERTICAL,
+    I_END_BOTTOM,
+    I_END_LEFT,
+    I_END_RIGHT,
+    I_END_TOP,
+    LINE_CLEAR_DELAY,
+    TSPIN_FLASH_FRAMES,
+)
 
 
 class SessionService:
@@ -189,5 +198,13 @@ class SessionService:
         if kind != "I":
             return ord(kind)
         if rotation % 2 == 0:
-            return 6 if x in (min_x, max_x) else 5
-        return 6 if y in (min_y, max_y) else 5
+            if x == min_x:
+                return I_END_LEFT
+            if x == max_x:
+                return I_END_RIGHT
+            return I_CENTER_HORIZONTAL
+        if y == min_y:
+            return I_END_TOP
+        if y == max_y:
+            return I_END_BOTTOM
+        return I_CENTER_VERTICAL
