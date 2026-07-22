@@ -47,3 +47,20 @@ def test_active_i_piece_assigns_outward_end_caps_for_both_axes():
         ("brick5center", 0),
         ("brick5end", 180),
     ]
+
+
+def test_next_i_piece_draws_horizontal_end_center_center_end_sequence():
+    renderer = _renderer_without_display()
+    drawn_cells = []
+    renderer._draw_cell = (
+        lambda x, y, size, key, angle=0: drawn_cells.append((key, angle))
+    )
+
+    renderer._draw_next_piece("I")
+
+    assert drawn_cells == [
+        ("brick5end", 90),
+        ("brick5center", 90),
+        ("brick5center", 90),
+        ("brick5end", -90),
+    ]
