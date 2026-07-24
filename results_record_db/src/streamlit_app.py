@@ -23,7 +23,6 @@ from datetime import date
 from pathlib import Path
 from typing import Iterator, List, Sequence
 
-import altair as alt
 import pandas as pd
 import streamlit as st
 from streamlit.runtime.scriptrunner import get_script_run_ctx
@@ -388,6 +387,8 @@ def _run_kpi1_tab(
     st.subheader("KPI1 工程別時間別")
     kpi1 = build_kpi1(base_df, start_date, end_date, selected_process, selected_workers)
     if not kpi1.empty:
+        import altair as alt
+
         chart = (
             alt.Chart(kpi1)
             .mark_bar()
@@ -424,6 +425,8 @@ def _run_kpi2_tab(base_df: pd.DataFrame, start_date: date, end_date: date) -> No
     )
     trend, detail = build_kpi2(base_df, start_date, end_date)
     if not trend.empty:
+        import altair as alt
+
         chart = (
             alt.Chart(trend)
             .mark_line(point=True)
@@ -478,6 +481,8 @@ def _run_kpi3_tab(
             "工程を選択", options=process_options, key="kpi3_process"
         )
         view_df = kpi3[kpi3["process_name"].astype(str) == selected_kpi3_process]
+        import altair as alt
+
         chart = (
             alt.Chart(view_df)
             .mark_bar()
