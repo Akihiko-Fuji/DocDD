@@ -150,13 +150,14 @@ def build_kpi1(
     selected_workers: list[str],
 ) -> pd.DataFrame:
     """KPI1（工程別・時間帯別作業件数）を作成する。"""
-    filtered = _filter_work_logs(
-        df, start_date, end_date, selected_process, selected_workers
-    )
-    if filtered.empty:
+    if df.empty or not selected_process or not selected_workers:
         return pd.DataFrame(
             columns=["hour_slot", "hour_order", "process_name", "work_count"]
         )
+
+    filtered = _filter_work_logs(
+        df, start_date, end_date, selected_process, selected_workers
+    )
 
     filtered["hour_order"] = filtered["end_ts"].dt.hour
     filtered = filtered[(filtered["hour_order"] >= 8) & (filtered["hour_order"] <= 17)]

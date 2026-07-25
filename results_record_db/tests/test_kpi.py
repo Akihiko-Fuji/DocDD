@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+import sys
 from datetime import date, datetime
 
 import pandas as pd
 
-from streamlit_app import build_kpi1, build_kpi2, build_kpi3
+from streamlit_app import _run_kpi1_tab, build_kpi1, build_kpi2, build_kpi3
 
 
 def _df() -> pd.DataFrame:
@@ -66,6 +67,54 @@ def test_kpi1_fills_cells_without_results_with_zero() -> None:
     assert empty_cell["work_count"] == 0
 
 
+def test_kpi1_builds_zero_filled_grid_when_filters_match_no_results(
+    monkeypatch,
+) -> None:
+    result = build_kpi1(
+        _df(),
+        date(2026, 1, 5),
+        date(2026, 1, 5),
+        ["出荷検査"],
+        ["W1"],
+    )
+
+    assert len(result) == 10
+    assert (result["work_count"] == 0).all()
+
+    class FakeChart:
+        def __getattr__(self, _name):
+            return lambda *args, **kwargs: self
+
+        def __add__(self, _other):
+            return self
+
+    class FakeAltair:
+        def Chart(self, *args, **kwargs):
+            return FakeChart()
+
+        def __getattr__(self, _name):
+            return lambda *args, **kwargs: FakeChart()
+
+    rendered_charts = []
+    monkeypatch.setitem(sys.modules, "altair", FakeAltair())
+    monkeypatch.setattr("streamlit_app.st.subheader", lambda *args, **kwargs: None)
+    monkeypatch.setattr(
+        "streamlit_app.st.altair_chart",
+        lambda chart, **kwargs: rendered_charts.append(chart),
+    )
+    monkeypatch.setattr("streamlit_app.st.download_button", lambda *args, **kwargs: None)
+    monkeypatch.setattr("streamlit_app.st.dataframe", lambda *args, **kwargs: None)
+
+    _run_kpi1_tab(
+        _df(),
+        date(2026, 1, 5),
+        date(2026, 1, 5),
+        ["出荷検査"],
+        ["W1"],
+    )
+    assert len(rendered_charts) == 2
+
+
 def test_kpi1_builds_ten_cells_for_one_selected_process() -> None:
     result = build_kpi1(
         _df(),
@@ -88,11 +137,22 @@ def test_kpi1_builds_ten_cells_for_one_selected_process() -> None:
 
 def test_kpi1_preserves_counts_after_date_process_and_worker_filters() -> None:
     df = _df()
-    next_day = pd.DataFrame(
+    excluded_records = pd.DataFrame(
         [
             {
                 "order_no": "O3",
                 "product_name": "P3",
+                "process_name": "内装組立",
+                "worker_name": "W9",
+                "start_ts": datetime(2026, 1, 5, 8, 30),
+                "end_ts": datetime(2026, 1, 5, 9, 0),
+                "elapsed_sec": 1800,
+                "work_sec": 1800,
+                "result_cd": "OK",
+            },
+            {
+                "order_no": "O4",
+                "product_name": "P4",
                 "process_name": "内装組立",
                 "worker_name": "W1",
                 "start_ts": datetime(2026, 1, 6, 8, 0),
@@ -103,9 +163,9 @@ def test_kpi1_preserves_counts_after_date_process_and_worker_filters() -> None:
             }
         ]
     )
-    next_day["work_date"] = next_day["end_ts"].dt.date
-    next_day["hour_bucket"] = next_day["end_ts"].dt.floor("h")
-    df = pd.concat([df, next_day], ignore_index=True)
+    excluded_records["work_date"] = excluded_records["end_ts"].dt.date
+    excluded_records["hour_bucket"] = excluded_records["end_ts"].dt.floor("h")
+    df = pd.concat([df, excluded_records], ignore_index=True)
 
     result = build_kpi1(
         df,
