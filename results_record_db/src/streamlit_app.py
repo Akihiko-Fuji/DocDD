@@ -407,6 +407,38 @@ def _run_kpi1_tab(
             .properties(height=460, title="工程別・時間帯別の作業件数")
         )
         st.altair_chart(chart, use_container_width=True)
+
+        heatmap_base = alt.Chart(kpi1).encode(
+            x=alt.X(
+                "hour_slot:N",
+                title="完了時間帯",
+                sort=alt.SortField(field="hour_order", order="ascending"),
+            ),
+            y=alt.Y("process_name:N", title="工程", sort=PROCESS_FLOW),
+        )
+        heatmap_max = max(1, int(kpi1["work_count"].max()))
+        heatmap = (
+            heatmap_base.mark_rect()
+            .encode(
+                color=alt.Color(
+                    "work_count:Q",
+                    title="完了台数",
+                    scale=alt.Scale(
+                        domain=[0, heatmap_max],
+                        range=["#f7fbff", "#6baed6"],
+                    ),
+                ),
+                tooltip=[
+                    alt.Tooltip("hour_slot:N", title="時間帯"),
+                    alt.Tooltip("process_name:N", title="工程"),
+                    alt.Tooltip("work_count:Q", title="完了台数", format="d"),
+                ],
+            )
+            + heatmap_base.mark_text(color="#111827").encode(
+                text=alt.Text("work_count:Q", format="d")
+            )
+        ).properties(title="工程別・時間帯別の完了台数ヒートマップ")
+        st.altair_chart(heatmap, use_container_width=True)
     st.download_button(
         "KPI1 CSV ダウンロード",
         data=_to_csv_bytes(kpi1),
