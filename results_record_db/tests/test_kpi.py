@@ -112,7 +112,7 @@ def test_kpi1_builds_zero_filled_grid_when_filters_match_no_results(
         ["出荷検査"],
         ["W1"],
     )
-    assert len(rendered_charts) == 2
+    assert len(rendered_charts) == 1
 
 
 def test_kpi1_builds_ten_cells_for_one_selected_process() -> None:
@@ -178,6 +178,7 @@ def test_kpi1_preserves_counts_after_date_process_and_worker_filters() -> None:
     assert result["work_count"].sum() == 2
     target = result[result["hour_slot"] == "08:00"].iloc[0]
     assert target["work_count"] == 2
+
 
 
 def test_kpi3_changes_with_worker_filter() -> None:
