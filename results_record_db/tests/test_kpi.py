@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-import sys
 from datetime import date, datetime
 
 import pandas as pd
 
-from streamlit_app import _run_kpi1_tab, build_kpi1, build_kpi2, build_kpi3
+from streamlit_app import build_kpi1, build_kpi2, build_kpi3
 
 
 def _df() -> pd.DataFrame:
@@ -31,154 +30,156 @@ def test_kpi1_changes_with_filters() -> None:
     assert target['work_count'] == 2
 
 
-def test_kpi1_builds_all_process_and_hour_cells() -> None:
-    result = build_kpi1(
-        _df(),
-        date(2026, 1, 5),
-        date(2026, 1, 5),
-        ["内装組立", "外装組立", "出荷検査"],
-        ["W1", "W2", "W3"],
-    )
-
-    assert len(result) == 30
-    assert result["hour_slot"].drop_duplicates().tolist() == [
-        f"{hour:02d}:00" for hour in range(8, 18)
-    ]
-    assert result.groupby("process_name", observed=True).size().to_dict() == {
-        "内装組立": 10,
-        "外装組立": 10,
-        "出荷検査": 10,
-    }
-
-
-def test_kpi1_fills_cells_without_results_with_zero() -> None:
-    result = build_kpi1(
-        _df(),
-        date(2026, 1, 5),
-        date(2026, 1, 5),
-        ["内装組立", "外装組立", "出荷検査"],
-        ["W1", "W2", "W3"],
-    )
-
-    empty_cell = result[
-        (result["hour_slot"] == "17:00")
-        & (result["process_name"].astype(str) == "出荷検査")
-    ].iloc[0]
-    assert empty_cell["work_count"] == 0
-
-
-def test_kpi1_builds_zero_filled_grid_when_filters_match_no_results(
-    monkeypatch,
-) -> None:
-    result = build_kpi1(
-        _df(),
-        date(2026, 1, 5),
-        date(2026, 1, 5),
-        ["出荷検査"],
-        ["W1"],
-    )
-
-    assert len(result) == 10
-    assert (result["work_count"] == 0).all()
-
-    class FakeChart:
-        def __getattr__(self, _name):
-            return lambda *args, **kwargs: self
-
-        def __add__(self, _other):
-            return self
-
-    class FakeAltair:
-        def Chart(self, *args, **kwargs):
-            return FakeChart()
-
-        def __getattr__(self, _name):
-            return lambda *args, **kwargs: FakeChart()
-
-    rendered_charts = []
-    monkeypatch.setitem(sys.modules, "altair", FakeAltair())
-    monkeypatch.setattr("streamlit_app.st.subheader", lambda *args, **kwargs: None)
-    monkeypatch.setattr(
-        "streamlit_app.st.altair_chart",
-        lambda chart, **kwargs: rendered_charts.append(chart),
-    )
-    monkeypatch.setattr("streamlit_app.st.download_button", lambda *args, **kwargs: None)
-    monkeypatch.setattr("streamlit_app.st.dataframe", lambda *args, **kwargs: None)
-
-    _run_kpi1_tab(
-        _df(),
-        date(2026, 1, 5),
-        date(2026, 1, 5),
-        ["出荷検査"],
-        ["W1"],
-    )
-    assert len(rendered_charts) == 2
-
-
-def test_kpi1_builds_ten_cells_for_one_selected_process() -> None:
-    result = build_kpi1(
-        _df(),
-        date(2026, 1, 5),
-        date(2026, 1, 5),
-        ["内装組立"],
-        ["W1"],
-    )
-
-    assert len(result) == 10
-    assert result["process_name"].astype(str).drop_duplicates().tolist() == ["内装組立"]
-    assert "外装組立" not in result["process_name"].astype(str).tolist()
-    assert "出荷検査" not in result["process_name"].astype(str).tolist()
-    internal_at_eight = result[
-        (result["hour_slot"] == "08:00")
-        & (result["process_name"].astype(str) == "内装組立")
-    ].iloc[0]
-    assert internal_at_eight["work_count"] == 2
-
-
-def test_kpi1_preserves_counts_after_date_process_and_worker_filters() -> None:
-    df = _df()
-    excluded_records = pd.DataFrame(
-        [
-            {
-                "order_no": "O3",
-                "product_name": "P3",
-                "process_name": "内装組立",
-                "worker_name": "W9",
-                "start_ts": datetime(2026, 1, 5, 8, 30),
-                "end_ts": datetime(2026, 1, 5, 9, 0),
-                "elapsed_sec": 1800,
-                "work_sec": 1800,
-                "result_cd": "OK",
-            },
-            {
-                "order_no": "O4",
-                "product_name": "P4",
-                "process_name": "内装組立",
-                "worker_name": "W1",
-                "start_ts": datetime(2026, 1, 6, 8, 0),
-                "end_ts": datetime(2026, 1, 6, 8, 30),
-                "elapsed_sec": 1800,
-                "work_sec": 1800,
-                "result_cd": "OK",
-            }
-        ]
-    )
-    excluded_records["work_date"] = excluded_records["end_ts"].dt.date
-    excluded_records["hour_bucket"] = excluded_records["end_ts"].dt.floor("h")
-    df = pd.concat([df, excluded_records], ignore_index=True)
-
-    result = build_kpi1(
-        df,
-        date(2026, 1, 5),
-        date(2026, 1, 5),
-        ["内装組立"],
-        ["W1"],
-    )
-
-    assert result["work_count"].sum() == 2
-    target = result[result["hour_slot"] == "08:00"].iloc[0]
-    assert target["work_count"] == 2
-
+# 以下のテストはセミナーのライブ改修で追加したヒートマップ機能向けのため、記録としてコメントアウトしています。
+# def test_kpi1_builds_all_process_and_hour_cells() -> None:
+#     result = build_kpi1(
+#         _df(),
+#         date(2026, 1, 5),
+#         date(2026, 1, 5),
+#         ["内装組立", "外装組立", "出荷検査"],
+#         ["W1", "W2", "W3"],
+#     )
+#
+#     assert len(result) == 30
+#     assert result["hour_slot"].drop_duplicates().tolist() == [
+#         f"{hour:02d}:00" for hour in range(8, 18)
+#     ]
+#     assert result.groupby("process_name", observed=True).size().to_dict() == {
+#         "内装組立": 10,
+#         "外装組立": 10,
+#         "出荷検査": 10,
+#     }
+#
+#
+# def test_kpi1_fills_cells_without_results_with_zero() -> None:
+#     result = build_kpi1(
+#         _df(),
+#         date(2026, 1, 5),
+#         date(2026, 1, 5),
+#         ["内装組立", "外装組立", "出荷検査"],
+#         ["W1", "W2", "W3"],
+#     )
+#
+#     empty_cell = result[
+#         (result["hour_slot"] == "17:00")
+#         & (result["process_name"].astype(str) == "出荷検査")
+#     ].iloc[0]
+#     assert empty_cell["work_count"] == 0
+#
+#
+# def test_kpi1_builds_zero_filled_grid_when_filters_match_no_results(
+#     monkeypatch,
+# ) -> None:
+#     result = build_kpi1(
+#         _df(),
+#         date(2026, 1, 5),
+#         date(2026, 1, 5),
+#         ["出荷検査"],
+#         ["W1"],
+#     )
+#
+#     assert len(result) == 10
+#     assert (result["work_count"] == 0).all()
+#
+#     class FakeChart:
+#         def __getattr__(self, _name):
+#             return lambda *args, **kwargs: self
+#
+#         def __add__(self, _other):
+#             return self
+#
+#     class FakeAltair:
+#         def Chart(self, *args, **kwargs):
+#             return FakeChart()
+#
+#         def __getattr__(self, _name):
+#             return lambda *args, **kwargs: FakeChart()
+#
+#     rendered_charts = []
+#     monkeypatch.setitem(sys.modules, "altair", FakeAltair())
+#     monkeypatch.setattr("streamlit_app.st.subheader", lambda *args, **kwargs: None)
+#     monkeypatch.setattr(
+#         "streamlit_app.st.altair_chart",
+#         lambda chart, **kwargs: rendered_charts.append(chart),
+#     )
+#     monkeypatch.setattr("streamlit_app.st.download_button", lambda *args, **kwargs: None)
+#     monkeypatch.setattr("streamlit_app.st.dataframe", lambda *args, **kwargs: None)
+#
+#     _run_kpi1_tab(
+#         _df(),
+#         date(2026, 1, 5),
+#         date(2026, 1, 5),
+#         ["出荷検査"],
+#         ["W1"],
+#     )
+#     assert len(rendered_charts) == 2
+#
+#
+# def test_kpi1_builds_ten_cells_for_one_selected_process() -> None:
+#     result = build_kpi1(
+#         _df(),
+#         date(2026, 1, 5),
+#         date(2026, 1, 5),
+#         ["内装組立"],
+#         ["W1"],
+#     )
+#
+#     assert len(result) == 10
+#     assert result["process_name"].astype(str).drop_duplicates().tolist() == ["内装組立"]
+#     assert "外装組立" not in result["process_name"].astype(str).tolist()
+#     assert "出荷検査" not in result["process_name"].astype(str).tolist()
+#     internal_at_eight = result[
+#         (result["hour_slot"] == "08:00")
+#         & (result["process_name"].astype(str) == "内装組立")
+#     ].iloc[0]
+#     assert internal_at_eight["work_count"] == 2
+#
+#
+# def test_kpi1_preserves_counts_after_date_process_and_worker_filters() -> None:
+#     df = _df()
+#     excluded_records = pd.DataFrame(
+#         [
+#             {
+#                 "order_no": "O3",
+#                 "product_name": "P3",
+#                 "process_name": "内装組立",
+#                 "worker_name": "W9",
+#                 "start_ts": datetime(2026, 1, 5, 8, 30),
+#                 "end_ts": datetime(2026, 1, 5, 9, 0),
+#                 "elapsed_sec": 1800,
+#                 "work_sec": 1800,
+#                 "result_cd": "OK",
+#             },
+#             {
+#                 "order_no": "O4",
+#                 "product_name": "P4",
+#                 "process_name": "内装組立",
+#                 "worker_name": "W1",
+#                 "start_ts": datetime(2026, 1, 6, 8, 0),
+#                 "end_ts": datetime(2026, 1, 6, 8, 30),
+#                 "elapsed_sec": 1800,
+#                 "work_sec": 1800,
+#                 "result_cd": "OK",
+#             }
+#         ]
+#     )
+#     excluded_records["work_date"] = excluded_records["end_ts"].dt.date
+#     excluded_records["hour_bucket"] = excluded_records["end_ts"].dt.floor("h")
+#     df = pd.concat([df, excluded_records], ignore_index=True)
+#
+#     result = build_kpi1(
+#         df,
+#         date(2026, 1, 5),
+#         date(2026, 1, 5),
+#         ["内装組立"],
+#         ["W1"],
+#     )
+#
+#     assert result["work_count"].sum() == 2
+#     target = result[result["hour_slot"] == "08:00"].iloc[0]
+#     assert target["work_count"] == 2
+#
+#
 
 def test_kpi3_changes_with_worker_filter() -> None:
     df = _df()
