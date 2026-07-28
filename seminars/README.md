@@ -23,6 +23,7 @@
 |---|---|
 | [01_script.md](https://github.com/Akihiko-Fuji/DocDD/blob/main/seminars/01_script.md) | セミナー本編の台本（スライド進行・説明内容） |
 | `README.md` | 本ファイル（台本の補助説明） |
+|[DocDD_Seminar_QA_Notes_20260725.md](https://github.com/Akihiko-Fuji/DocDD/blob/main/seminars/DocDD_Seminar_QA_Notes_20260725.md)|DocDDセミナー 質疑事項整理|
 
 ---
 
