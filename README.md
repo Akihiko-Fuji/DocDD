@@ -63,16 +63,45 @@ DocDDでは、これらを要求、仕様、設計、試験、変更記録とし
 
 ---
 
-## はじめての方向け（GitHubに不慣れな方へ）
+## はじめての方向け：無料で読む・動かす・改変する
 
-以下の順でクリックして読んでいただくと、全体像を把握しやすくなります。
+**本教材の閲覧、ダウンロード、ローカル実行、自動テストは、原則として有料の開発ソフトウェアを購入せずに試せます。**
 
-1. 主教材のREADME：[`results_record_db/README.md`](./results_record_db/README.md)
-2. 主教材の環境構築：[`results_record_db/results_record_db_LOCAL_POSTGRESQL_SETUP.md`](./results_record_db/results_record_db_LOCAL_POSTGRESQL_SETUP.md)
-3. 補助教材のREADME：[`Block_Puzzle_DocDD/readme.md`](./Block_Puzzle_DocDD/readme.md)
-4. 文書対応マップ：[`Block_Puzzle_DocDD/docs/00_overview/00_document_map.md`](./Block_Puzzle_DocDD/docs/00_overview/00_document_map.md)
+### 無料で始められる範囲
 
-はじめて見る方は、まず [`START_HERE.md`](./START_HERE.md) を参照すると全体構成を把握しやすいです。
+| やりたいこと | 用意するもの | 無料で利用できること |
+|---|---|---|
+| 文書やコードを読む | Webブラウザ | GitHubアカウントなしで閲覧可能 |
+| ファイル一式を取得する | Webブラウザ | 「Code」→「Download ZIP」から無料でダウンロード可能 |
+| 自分用のコピーを作る | [GitHubの無料アカウント](https://github.com/signup) | Fork、変更履歴、ブランチ、プルリクエストを利用可能 |
+| AIによるコード作成・修正を試す | [ChatGPTアカウント](https://chatgpt.com/) | [ChatGPT Codex](https://chatgpt.com/codex)のFreeプランで小規模な開発作業を試用可能 |
+| 教材を自分のPCで動かす | Git、Python、PostgreSQLなど | 必要なソフトウェアを無料でダウンロード・利用可能 |
+
+主に使用する[Git](https://git-scm.com/)、[Python](https://www.python.org/)、[PostgreSQL](https://www.postgresql.org/)、[Visual Studio Code](https://code.visualstudio.com/)は無償で利用できます。pytest、Streamlit、PygameなどのPythonライブラリも、教材の手順に従って無償でインストールできます。
+
+ChatGPT Codexにも月額0ドルのFreeプランがあります。ただし、無料枠の利用量や対象機能には制限があり、条件は変更される場合があります。利用時点の[OpenAI公式料金案内](https://learn.chatgpt.com/docs/pricing)を確認してください。
+
+### 最初に読む順番
+
+1. [START_HERE.md](./START_HERE.md)
+2. 主教材：[results_record_db/README.md](./results_record_db/README.md)
+3. Windows環境の準備：[results_record_db/WINDOWS_SETUP.md](./results_record_db/WINDOWS_SETUP.md)
+4. 補助教材：[Block_Puzzle_DocDD/readme.md](./Block_Puzzle_DocDD/readme.md)
+5. 文書地図：[Block_Puzzle_DocDD/docs/00_overview/00_document_map.md](./Block_Puzzle_DocDD/docs/00_overview/00_document_map.md)
+
+### 自分のテーマへ改変する
+
+本リポジトリのコードと文書は、[Apache License 2.0](./LICENSE)の条件に従って利用、変更、再配布できます。元の教材を直接上書きするのではなく、ZIPのコピーまたはForkを作り、自分用に変更することを推奨します。
+
+1. 変更前にサンプルを起動し、自動テストが通ることを確認する
+2. 追加・変更したい要求をMarkdown文書へ記載する
+3. AIへ、その文書を基準にコードとテストを変更するよう依頼する
+4. 変更差分、自動テスト、実際の動作を人が確認する
+5. 不足していた条件を文書とテストへ反映する
+
+小さな画面変更、入力チェック、KPI、ゲームルールなど、結果を確認しやすい変更から始めるとDocDDの流れを理解しやすくなります。
+
+AGENTS.md、自動テストで確認できる範囲、本番運用、性能、更新、引継ぎなどの補足は、[seminars/DocDD_Seminar_QA_Notes_20260725.md](./seminars/DocDD_Seminar_QA_Notes_20260725.md)を参照してください。
 
 ---
 
@@ -182,25 +211,6 @@ DocDD（Document-Driven Development）の構造を見せる教材です。
 
 ---
 
-## まずどこから読むべきか
-
-読む順番としては、以下を推奨します。
-
-1. [`seminars/`](./seminars/)
-2. [`results_record_db/README.md`](./results_record_db/README.md)
-3. [`results_record_db/results_record_db_LOCAL_POSTGRESQL_SETUP.md`](./results_record_db/results_record_db_LOCAL_POSTGRESQL_SETUP.md)
-4. [`Block_Puzzle_DocDD/readme.md`](./Block_Puzzle_DocDD/readme.md)
-5. [`Block_Puzzle_DocDD/docs/00_overview/00_document_map.md`](./Block_Puzzle_DocDD/docs/00_overview/00_document_map.md)
-
-この順で読むと、
-
-- セミナー全体の狙い
-- 実務題材での具体例
-- 実装・検証の流れ
-- DocDD の構造
-
-を追いやすくなります。
-
 ---
 
 ## ディレクトリの考え方
@@ -255,14 +265,6 @@ DocDD の構造理解用教材
 あれが考慮できてない、これが必要だと判断できる場合、それらも要件としてドキュメント化し、DocDD手法で落とし込むことが可能です。
 
 ---
-
-## 参照先
-
-- [`seminars/`](./seminars/)
-- [`results_record_db/README.md`](./results_record_db/README.md)
-- [`results_record_db/results_record_db_LOCAL_POSTGRESQL_SETUP.md`](./results_record_db/results_record_db_LOCAL_POSTGRESQL_SETUP.md)
-- [`Block_Puzzle_DocDD/readme.md`](./Block_Puzzle_DocDD/readme.md)
-- [`Block_Puzzle_DocDD/docs/00_overview/00_document_map.md`](./Block_Puzzle_DocDD/docs/00_overview/00_document_map.md)
 
 ---
 
