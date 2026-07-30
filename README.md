@@ -301,6 +301,18 @@ python -m pytest -q
 - 脆弱性の連絡方針: [`SECURITY.md`](./SECURITY.md)
 - 画像資産の取り扱い: [`Block_Puzzle_DocDD/ASSETS.md`](./Block_Puzzle_DocDD/ASSETS.md)
 
+## 質問・連絡・コントリビューション
+
+- 教材への質問、不具合、改善提案：[DocDDのIssues](https://github.com/Akihiko-Fuji/DocDD/issues)
+- 改善提案・変更手順：[`CONTRIBUTING.md`](./CONTRIBUTING.md)
+- 脆弱性の連絡方針：[`SECURITY.md`](./SECURITY.md)
+- 作者の公開情報・その他のリポジトリ：[Akihiko-FujiのGitHubプロフィール](https://github.com/Akihiko-Fuji)
+
+GitHubの「Issue」は、質問や不具合を投稿できる公開掲示板です。GitHubの無料アカウントでログインし、Issues画面の「New issue」から投稿できます。
+
+Issueの内容は公開されます。個人情報、勤務先や顧客の機密情報、パスワード、APIキーなどは記載しないでください。脆弱性に関する連絡は、公開Issueへ投稿せず、[`SECURITY.md`](./SECURITY.md)を確認してください。
+
+
 ## ライセンス
 
 コードと文書は、特記がない限り [Apache License 2.0](./LICENSE) の条件で公開しています。第三者の商標・製品名に対してライセンスを付与するものではありません。
