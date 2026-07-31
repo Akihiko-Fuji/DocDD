@@ -12,8 +12,6 @@
 **AI を用いた開発においても、仕様の粒度と文書の整理が成果物の質を決める**  
 ことを、実例を通して示すことにあります。
 
-セミナー開催は前向きに対応いたしますので、興味がございましたら[こちらから連絡ください](https://github.com/Akihiko-Fuji/DocDD/discussions/28)。
-
 
 ## AI時代にDocDDが必要になる理由
 
@@ -297,7 +295,7 @@ python -m pytest -q
 
 ## 質問・連絡・コントリビューション
 
-- 教材への質問、不具合、改善提案：[DocDDのIssues](https://github.com/Akihiko-Fuji/DocDD/issues)
+- 教材への質問、不具合、改善提案：[discussions](https://github.com/Akihiko-Fuji/DocDD/discussions/28)
 - 改善提案・変更手順：[`CONTRIBUTING.md`](./CONTRIBUTING.md)
 - 脆弱性の連絡方針：[`SECURITY.md`](./SECURITY.md)
 - 画像資産の取り扱い: [`Block_Puzzle_DocDD/ASSETS.md`](./Block_Puzzle_DocDD/ASSETS.md)
