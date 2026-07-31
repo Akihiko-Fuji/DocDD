@@ -301,7 +301,7 @@ python -m pytest -q
 - 改善提案・変更手順：[`CONTRIBUTING.md`](./CONTRIBUTING.md)
 - 脆弱性の連絡方針：[`SECURITY.md`](./SECURITY.md)
 - 画像資産の取り扱い: [`Block_Puzzle_DocDD/ASSETS.md`](./Block_Puzzle_DocDD/ASSETS.md)
-- 作者の公開情報・その他のリポジトリ：[Akihiko-FujiのGitHubプロフィール](https://github.com/Akihiko-Fuji)
+- このリポジトリの作者に関する情報・その他の制作物：[Akihiko-Fujiのプロフィール](https://github.com/Akihiko-Fuji)
 
 GitHubの「Issue」は、質問や不具合を投稿できる公開掲示板です。GitHubの無料アカウントでログインし、Issues画面の「New issue」から投稿できます。
 
