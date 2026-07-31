@@ -6,7 +6,8 @@
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](./LICENSE)
 
 このリポジトリは、**[第2回　21世紀ＩＴＣクラブ　ＩＴＣスキルアップ・セミナー](https://21itc.net/seminar/20260725)** 及び **[中小企業診断士協会 生産革新フォーラム](https://pub.nikkan.co.jp/author/a10030845.html)**（MIF研究会）向けセミナー「**AIを用いたコード開発：仕様の粒度が成果物を決める**」  
-のために構成した教材・資料リポジトリです。セミナー開催は前向きに対応いたしますので、興味がございましたら[こちらから連絡ください](https://github.com/Akihiko-Fuji/DocDD/discussions/28)。
+のために構成した教材・資料リポジトリです。
+セミナー開催は前向きに対応いたしますので、興味がございましたら[こちらから連絡ください](https://github.com/Akihiko-Fuji/DocDD/discussions/28)。
 
 主目的は、単にコードを作ることではなく、  
 **AI を用いた開発においても、仕様の粒度と文書の整理が成果物の質を決める**  
