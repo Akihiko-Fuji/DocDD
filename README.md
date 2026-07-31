@@ -301,10 +301,6 @@ python -m pytest -q
 - 画像資産の取り扱い: [`Block_Puzzle_DocDD/ASSETS.md`](./Block_Puzzle_DocDD/ASSETS.md)
 - このリポジトリの作者に関する情報・その他の制作物：[Akihiko-Fujiのプロフィール](https://github.com/Akihiko-Fuji)
 
-GitHubの「Issue」は、質問や不具合を投稿できる公開掲示板です。GitHubの無料アカウントでログインし、Issues画面の「New issue」から投稿できます。
-
-Issueの内容は公開されます。個人情報、勤務先や顧客の機密情報、パスワード、APIキーなどは記載しないでください。脆弱性に関する連絡は、公開Issueへ投稿せず、[`SECURITY.md`](./SECURITY.md)を確認してください。
-
 
 ## ライセンス
 
